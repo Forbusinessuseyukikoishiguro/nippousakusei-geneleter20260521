@@ -1,0 +1,3926 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>うさうさ 日報作成ジェネレーター 🐰</title>
+<style>
+  :root{
+    --cream:#fffaf2; --cream2:#fdf3e3; --paper:#fff; --orange:#ea7d2b; --orange-deep:#cf6315;
+    --gold:#c79a2e; --gold-soft:#e7c873; --ink:#3a2c20; --ink-soft:#6b5848;
+    --line:#ecd9bd; --line-soft:#f3e6cf; --ok:#3f8f5f; --shadow:0 10px 30px rgba(180,120,40,.10);
+  }
+  *{box-sizing:border-box;}
+  body{margin:0;font-family:"Hiragino Sans","Hiragino Kaku Gothic ProN","Yu Gothic","Meiryo",sans-serif;
+    color:var(--ink);line-height:1.7;-webkit-font-smoothing:antialiased;
+    background:radial-gradient(900px 500px at 110% -10%, #ffe9c8 0%, rgba(255,233,200,0) 55%),
+      radial-gradient(800px 600px at -10% 10%, #ffeede 0%, rgba(255,238,222,0) 50%),
+      linear-gradient(180deg,var(--cream) 0%,var(--cream2) 100%);}
+  .wrap{max-width:880px;margin:0 auto;padding:0 18px 80px;}
+
+  header.hero{margin-top:32px;background:var(--paper);border:1px solid var(--line);border-radius:22px;
+    padding:26px 30px;box-shadow:var(--shadow);position:relative;overflow:hidden;}
+  header.hero::before{content:"";position:absolute;inset:0 0 auto 0;height:6px;
+    background:linear-gradient(90deg,var(--gold-soft),var(--orange),var(--gold));}
+  header.hero h1{margin:0 0 6px;font-size:1.4rem;font-weight:800;}
+  header.hero p{margin:0;color:var(--ink-soft);font-size:.92rem;}
+  .bunny{position:absolute;top:20px;right:24px;font-size:34px;filter:drop-shadow(0 4px 8px rgba(200,120,40,.25));}
+
+  .tabs{display:flex;gap:8px;margin:18px 0;flex-wrap:wrap;}
+  .tab{flex:1 1 auto;min-width:150px;text-align:center;cursor:pointer;border:1px solid var(--line);
+    background:var(--paper);padding:11px 14px;border-radius:14px;font-weight:700;color:var(--ink-soft);
+    box-shadow:var(--shadow);transition:.15s;}
+  .tab:hover{transform:translateY(-1px);}
+  .tab.active{color:#fff;border-color:transparent;background:linear-gradient(135deg,var(--orange),var(--gold));}
+
+  .panel{display:none;background:var(--paper);border:1px solid var(--line);border-radius:20px;
+    padding:24px 26px;box-shadow:var(--shadow);}
+  .panel.active{display:block;animation:rise .4s ease both;}
+  @keyframes rise{from{opacity:0;transform:translateY(8px);}to{opacity:1;transform:none;}}
+
+  h2{font-size:1.05rem;font-weight:800;margin:4px 0 14px;padding-left:14px;position:relative;}
+  h2::before{content:"";position:absolute;left:0;top:.18em;bottom:.18em;width:6px;border-radius:6px;
+    background:linear-gradient(180deg,var(--orange),var(--gold));}
+  h3{font-size:.92rem;font-weight:800;color:var(--orange-deep);margin:20px 0 8px;}
+  .hint{font-size:.8rem;color:var(--ink-soft);margin:-2px 0 8px;}
+
+  label{display:block;font-size:.82rem;font-weight:700;color:var(--ink-soft);margin:12px 0 4px;}
+  input,select,textarea{width:100%;font:inherit;color:var(--ink);background:#fffdf9;
+    border:1px solid var(--line);border-radius:10px;padding:9px 11px;outline:none;}
+  input:focus,select:focus,textarea:focus{border-color:var(--orange);box-shadow:0 0 0 3px #ffe6c9;}
+  textarea{resize:vertical;min-height:62px;line-height:1.6;}
+  .grid{display:grid;grid-template-columns:1fr 1fr;gap:0 16px;}
+  .grid3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:0 14px;}
+
+  .task-row{display:grid;grid-template-columns:1.3fr .8fr 1.6fr 1.1fr auto;gap:8px;margin:8px 0;align-items:center;}
+  .task-row input,.task-row select{margin:0;}
+  .del{background:#fff1e6;border:1px solid #ffd6ad;color:var(--orange-deep);border-radius:9px;
+    width:34px;height:34px;cursor:pointer;font-size:1rem;line-height:1;}
+  .addbtn{margin-top:8px;background:#fff3e3;border:1px dashed var(--orange);color:var(--orange-deep);
+    border-radius:10px;padding:8px 14px;cursor:pointer;font-weight:700;}
+
+  .checks label{display:flex;align-items:center;gap:8px;font-weight:500;color:var(--ink);margin:6px 0;cursor:pointer;}
+  .checks input{width:auto;}
+
+  .toggle{display:flex;align-items:center;gap:8px;margin:14px 0 2px;font-weight:700;color:var(--ink-soft);cursor:pointer;}
+  .toggle input{width:auto;}
+  .collapsible{display:none;}
+  .collapsible.open{display:block;}
+
+  .gen{margin-top:22px;width:100%;background:linear-gradient(135deg,var(--orange),var(--orange-deep));
+    color:#fff;border:none;border-radius:14px;padding:14px;font-size:1rem;font-weight:800;cursor:pointer;
+    box-shadow:0 8px 20px rgba(207,99,21,.3);}
+  .gen:hover{filter:brightness(1.04);}
+
+  .outwrap{margin-top:22px;background:var(--paper);border:1px solid var(--line);border-radius:20px;
+    padding:20px 22px;box-shadow:var(--shadow);}
+  .outhead{display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap;margin-bottom:10px;}
+  .outhead h2{margin:0;}
+  .outbtns{display:flex;flex-wrap:wrap;gap:6px;justify-content:flex-end;}
+  .outbtns button{border:1px solid var(--line);background:#fff7ee;color:var(--ink);border-radius:10px;
+    padding:8px 14px;cursor:pointer;font-weight:700;}
+  .outbtns button:hover{background:#ffeede;}
+  #output{width:100%;min-height:320px;font-family:"SFMono-Regular",Consolas,Menlo,monospace;
+    font-size:.86rem;line-height:1.65;background:#fffdf8;border:1px solid var(--line);border-radius:12px;padding:14px;}
+
+  .toast{position:fixed;left:50%;bottom:26px;transform:translateX(-50%) translateY(20px);
+    background:var(--ink);color:#fff;padding:10px 20px;border-radius:999px;font-weight:700;font-size:.9rem;
+    opacity:0;pointer-events:none;transition:.25s;z-index:50;}
+  .toast.show{opacity:1;transform:translateX(-50%) translateY(0);}
+
+  .foot{text-align:center;color:var(--gold);font-weight:700;font-size:.8rem;letter-spacing:.06em;margin-top:24px;}
+
+  /* ---- 時間割（HR学校風） ---- */
+  .hr-card{background:linear-gradient(160deg,#fff6e9,#fff);border:1px solid var(--line);
+    border-radius:14px;padding:14px 16px;margin:10px 0 16px;}
+  .hr-card h3{margin:0 0 8px;}
+  .tt-head,.tt-row{display:grid;
+    grid-template-columns:60px 66px 64px 54px 54px 1.1fr 1.1fr 64px 34px 50px 28px 28px;gap:5px;align-items:center;}
+  .tt-head{font-size:.72rem;font-weight:700;color:var(--ink-soft);padding:0 2px 4px;}
+  .tt-row{margin:5px 0;border-left:6px solid transparent;padding-left:6px;border-radius:6px;transition:.2s;}
+  .tt-row input,.tt-row select{margin:0;padding:7px 8px;font-size:.86rem;}
+  .tt-row .tt-custom{padding:6px;font-size:.8rem;}
+  .tt-row.brk{opacity:.85;}
+  .tt-row.brk input[disabled]{background:#f6efe2;color:var(--ink-soft);}
+  /* 区分カラー（左帯＋淡い背景） */
+  .tt-row.kind-lesson{border-left-color:#e0792b;background:#fff5ea;}   /* 授業 */
+  .tt-row.kind-meeting{border-left-color:#3f7fae;background:#eef6fb;}  /* 会議 */
+  .tt-row.kind-work{border-left-color:#3f8f5f;background:#eef8f1;}     /* 作業 */
+  .tt-row.kind-break{border-left-color:#b8a26a;background:#faf6ec;}    /* 休憩 */
+  .tt-row.kind-other{border-left-color:#8a6fae;background:#f4f0fa;}    /* その他 */
+  /* 差し込み（割込）コマ */
+  .tt-row.insert{box-shadow:inset 3px 0 0 #d8492b, 0 0 0 1px #f3b8a6;}
+  .tt-row.insert::before{content:"⚡";position:absolute;}
+  .tt-ins{display:flex;align-items:center;justify-content:center;gap:2px;font-size:.72rem;color:var(--ink-soft);cursor:pointer;}
+  .tt-ins input{width:auto;margin:0;}
+  .ins-btn{border:1px solid var(--gold-soft);background:#fff3e2;color:var(--orange-deep);border-radius:8px;
+    cursor:pointer;font-weight:800;font-size:.9rem;line-height:1;padding:0;}
+  .ins-btn:hover{background:#ffe6c9;}
+  .tt-min{font-size:.8rem;color:var(--ink-soft);text-align:center;}
+  .tt-legend{font-size:.74rem;color:var(--ink-soft);margin:4px 0 0;}
+  .kind-chip{display:inline-block;padding:1px 8px;border-radius:999px;font-size:.72rem;font-weight:700;margin-right:6px;}
+  .kc-lesson{background:#ffe5cf;color:#a85416;}
+  .kc-meeting{background:#dcecf7;color:#2c5d80;}
+  .kc-work{background:#dcefe2;color:#2c6a47;}
+  .kc-break{background:#efe7d2;color:#7a6a3e;}
+
+  /* よく使うタグ ボタン */
+  .tagbar-wrap{border:1px dashed var(--line);border-radius:12px;padding:10px 12px;margin:10px 0;background:#fffdf8;}
+  .tagbar-head{display:flex;justify-content:space-between;align-items:baseline;gap:8px;flex-wrap:wrap;margin-bottom:8px;}
+  .tagbar{display:flex;flex-wrap:wrap;gap:6px;}
+  .tag-btn{display:inline-flex;align-items:center;gap:4px;border:1px solid var(--gold-soft);
+    background:#fff3e2;color:var(--orange-deep);border-radius:999px;padding:5px 12px;cursor:pointer;
+    font-weight:700;font-size:.8rem;transition:.12s;}
+  .tag-btn:hover{background:#ffe6c9;transform:translateY(-1px);}
+  .tag-btn .x{color:#c4441f;font-weight:800;opacity:.5;margin-left:2px;}
+  .tag-btn .x:hover{opacity:1;}
+  .tagbar-add{display:flex;gap:6px;margin-top:8px;align-items:center;}
+  .tagbar-add input{flex:1;}
+  .tagbar-add .mini-btn{flex:0 0 auto;border:1px solid var(--line);background:#fff;border-radius:8px;padding:7px 12px;cursor:pointer;font-weight:700;font-size:.8rem;}
+  .calc{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin:14px 0 4px;}
+  .calc .cell{background:var(--paper);border:1px solid var(--line);border-radius:12px;
+    padding:12px;text-align:center;box-shadow:var(--shadow);}
+  .calc .num{font-size:1.35rem;font-weight:800;color:var(--orange-deep);line-height:1.2;}
+  .calc .lab{font-size:.72rem;color:var(--ink-soft);margin-top:2px;}
+  .bar{height:14px;border-radius:999px;background:#f1e3c9;overflow:hidden;margin:6px 0 2px;}
+  .bar > i{display:block;height:100%;background:linear-gradient(90deg,var(--orange),var(--gold));width:0;transition:width .3s;}
+  /* 区分別 内訳バー */
+  .kindbar{display:flex;height:16px;border-radius:999px;overflow:hidden;margin:10px 0 4px;background:#f1e3c9;}
+  .kindbar > span{height:100%;}
+  .kb-lesson{background:#e0792b;} .kb-meeting{background:#3f7fae;} .kb-work{background:#3f8f5f;}
+
+  /* 帰りのHR 自動励ましカード */
+  .cheer-card{margin:14px 0 4px;border-radius:14px;padding:16px 18px;border:1px solid var(--line);
+    background:linear-gradient(160deg,#fff6e9,#fff);display:none;animation:rise .4s ease both;}
+  .cheer-card.show{display:block;}
+  .cheer-card .emoji{font-size:1.6rem;}
+  .cheer-card .title{font-weight:800;font-size:1.05rem;margin:4px 0;color:var(--orange-deep);}
+  .cheer-card .msg{font-size:.92rem;color:var(--ink);}
+  .cheer-card.lv-hanamaru{background:linear-gradient(160deg,#fff0f3,#fff7ea);border-color:#f3c6cf;}
+  .cheer-card.lv-great{background:linear-gradient(160deg,#fff6e9,#fffdf5);}
+  .cheer-card.lv-good{background:linear-gradient(160deg,#f3f9ff,#fff);border-color:#cfe2f0;}
+  .cheer-card.lv-ok{background:linear-gradient(160deg,#f1f9f3,#fff);border-color:#cfe6d6;}
+
+  /* 30日ログ（保存・入出力） */
+  .log-actions{display:flex;flex-wrap:wrap;gap:8px;margin:10px 0;}
+  .log-actions button{border:1px solid var(--line);background:#fff7ee;color:var(--ink);
+    border-radius:10px;padding:9px 14px;cursor:pointer;font-weight:700;font-size:.88rem;}
+  .log-actions button:hover{background:#ffeede;}
+  .log-actions .primary{background:linear-gradient(135deg,var(--orange),var(--orange-deep));color:#fff;border:none;}
+  .log-actions .danger{background:#fff0ec;border-color:#ffc9b6;color:#c4441f;}
+  .daylist{margin:6px 0;border:1px solid var(--line);border-radius:12px;overflow:hidden;}
+  .daylist .empty{padding:14px;color:var(--ink-soft);font-size:.88rem;text-align:center;}
+  .day-item{display:grid;grid-template-columns:1fr auto auto;gap:8px;align-items:center;
+    padding:10px 12px;border-top:1px solid var(--line-soft);font-size:.86rem;}
+  .day-item:first-child{border-top:none;}
+  .day-item .meta{color:var(--ink-soft);font-size:.78rem;}
+  .day-item .mini-btn{border:1px solid var(--line);background:#fff;border-radius:8px;padding:5px 10px;cursor:pointer;font-weight:700;font-size:.78rem;}
+  .day-item .mini-btn.del{color:#c4441f;border-color:#ffc9b6;background:#fff5f2;width:auto;height:auto;}
+  .agg{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin:10px 0;}
+  .agg .cell{background:var(--paper);border:1px solid var(--line);border-radius:12px;padding:12px;text-align:center;box-shadow:var(--shadow);}
+  .agg .num{font-size:1.2rem;font-weight:800;color:var(--orange-deep);}
+  .agg .lab{font-size:.72rem;color:var(--ink-soft);margin-top:2px;}
+  .hidden-file{display:none;}
+
+  /* スキルシート（案件欄） */
+  .sk-block{border:1px solid var(--line);border-radius:12px;padding:12px 14px;margin:10px 0;background:#fffdf8;}
+  .sk-block .bk-head{display:flex;justify-content:space-between;align-items:baseline;gap:8px;flex-wrap:wrap;}
+  .sk-block .bk-title{font-weight:800;color:var(--orange-deep);font-size:.95rem;}
+  .sk-guide{font-size:.74rem;color:var(--ink-soft);background:#fff3e2;border-radius:8px;padding:4px 8px;}
+  .sk-count{font-size:.74rem;font-weight:700;color:var(--ink-soft);}
+  .sk-count.warn{color:#c4441f;}
+  .sk-count.okc{color:#2c7a52;}
+  .sk-case{display:inline-block;font-weight:800;border-radius:999px;padding:2px 12px;font-size:.8rem;
+    background:#ffe5cf;color:#a85416;}
+  .sk-check label{display:flex;align-items:flex-start;gap:8px;font-weight:500;color:var(--ink);margin:7px 0;cursor:pointer;font-size:.88rem;}
+  .sk-check input{width:auto;margin-top:3px;}
+  .work-row{display:flex;gap:6px;align-items:center;margin:5px 0;}
+  .work-row .idx{font-size:.78rem;color:var(--ink-soft);width:22px;text-align:right;flex:0 0 auto;}
+  .work-row input{margin:0;}
+  .work-row .del{flex:0 0 auto;}
+
+  /* 進捗報告タスク行 */
+  .ci-row{display:grid;grid-template-columns:1.6fr 92px 64px 1fr 32px;gap:6px;align-items:center;margin:5px 0;}
+  .ci-row input,.ci-row select{margin:0;padding:7px 8px;font-size:.86rem;}
+  .ci-row .del{width:32px;height:32px;}
+  @media(max-width:640px){
+    .ci-row{grid-template-columns:1fr 1fr 30px;}
+    .ci-row .ci-name{grid-column:1 / -1;}
+    .ci-row .ci-note{grid-column:1 / span 2;}
+  }
+
+  /* 一人MTG（PDCA） */
+  .pdca-timer{background:linear-gradient(160deg,#fff6e9,#fffdf5);border:1px solid var(--line);
+    border-radius:16px;padding:18px;text-align:center;box-shadow:var(--shadow);margin:12px 0;}
+  .pdca-timer .clock{font-size:3rem;font-weight:800;color:var(--orange-deep);font-variant-numeric:tabular-nums;line-height:1.1;}
+  .pdca-timer .phase{font-size:1.05rem;font-weight:800;margin-bottom:4px;}
+  .pdca-timer .sub{font-size:.8rem;color:var(--ink-soft);margin-top:4px;}
+  .pdca-timer.running{border-color:var(--orange);}
+  .pdca-ctrl{display:flex;flex-wrap:wrap;gap:8px;justify-content:center;margin-top:12px;}
+  .pdca-ctrl button{border:1px solid var(--line);background:#fff7ee;color:var(--ink);border-radius:10px;
+    padding:9px 16px;cursor:pointer;font-weight:700;font-size:.9rem;}
+  .pdca-ctrl button:hover{background:#ffeede;}
+  .pdca-ctrl .primary{background:linear-gradient(135deg,var(--orange),var(--orange-deep));color:#fff;border:none;}
+  .pdca-step{border:1px solid var(--line);border-radius:12px;padding:12px 14px;margin:10px 0;background:#fffdf8;border-left:6px solid var(--gold);}
+  .pdca-step.active{border-left-color:var(--orange);background:#fff5ea;}
+  .pdca-step .hd{display:flex;justify-content:space-between;align-items:baseline;gap:8px;flex-wrap:wrap;margin-bottom:6px;}
+  .pdca-step .nm{font-weight:800;color:var(--orange-deep);}
+  .pdca-step .mins{display:flex;align-items:center;gap:4px;font-size:.8rem;color:var(--ink-soft);}
+  .pdca-step .mins input{width:54px;margin:0;padding:5px 6px;text-align:center;}
+  .pdca-bar{height:8px;background:#f0e6d4;border-radius:999px;overflow:hidden;margin-top:8px;}
+  .pdca-bar i{display:block;height:100%;background:linear-gradient(90deg,var(--orange),var(--gold));width:0;transition:width .3s;}
+
+  /* 自由ひな形（日報） */
+  .tpl-fields{border:1px solid var(--line);border-radius:12px;padding:12px 14px;margin:10px 0;background:#fffdf8;}
+  .tpl-fields .ph-row{display:grid;grid-template-columns:160px 1fr;gap:8px;align-items:start;margin:6px 0;}
+  .tpl-fields .ph-row label{font-weight:700;color:var(--ink);padding-top:7px;font-size:.86rem;}
+  .tpl-fields .ph-row textarea{min-height:40px;}
+  .tpl-fields .empty{color:var(--ink-soft);font-size:.86rem;}
+  .tpl-saved{display:flex;flex-wrap:wrap;gap:6px;align-items:center;margin:8px 0;}
+  .tpl-chip{display:inline-flex;align-items:center;gap:6px;border:1px solid var(--gold-soft);
+    background:#fff3e2;color:var(--orange-deep);border-radius:999px;padding:5px 12px;cursor:pointer;font-weight:700;font-size:.82rem;}
+  .tpl-chip:hover{background:#ffe6c9;}
+  .tpl-chip.cur{background:linear-gradient(135deg,var(--orange),var(--orange-deep));color:#fff;border:none;}
+  .tpl-chip .x{opacity:.55;font-weight:800;}
+  .tpl-chip .x:hover{opacity:1;color:#c4441f;}
+  @media(max-width:640px){
+    .tpl-fields .ph-row{grid-template-columns:1fr;}
+    .tpl-fields .ph-row label{padding-top:0;}
+    .agg{grid-template-columns:repeat(2,1fr);}
+  }
+  @media(max-width:640px){
+    .grid,.grid3{grid-template-columns:1fr;}
+    .task-row{grid-template-columns:1fr 1fr;}
+    .task-row .t-purpose,.task-row .t-time{grid-column:span 2;}
+    .bunny{font-size:28px;}
+    .calc{grid-template-columns:repeat(2,1fr);}
+    .tt-head{display:none;}
+    .tt-row{grid-template-columns:1fr 1fr 30px;grid-auto-rows:auto;
+      border:1px solid var(--line-soft);border-left-width:6px;border-radius:10px;padding:8px;background:#fffdf8;}
+    .tt-row .tt-label{grid-column:1 / -1;font-weight:700;}
+    .tt-row .tt-kind{grid-column:span 2;}
+    .tt-row .tt-start,.tt-row .tt-end{grid-column:span 1;}
+    .tt-row .tt-plan,.tt-row .tt-actual{grid-column:1 / -1;}
+    .tt-row .tt-status{grid-column:span 2;}
+    .tt-row .tt-min{grid-column:span 1;}
+  }
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <header class="hero">
+    <div class="bunny">🐰</div>
+    <h1>うさうさ 日報作成ジェネレーター</h1>
+    <p>フォームを埋めるだけ。退勤前報告・メモ版・相談チャットをコピペできる形で生成します。データはどこにも送信されません。</p>
+  </header>
+
+  <div class="tabs">
+    <div class="tab active" data-tab="report">📋 退勤前報告（業務日報）</div>
+    <div class="tab" data-tab="memo">📝 メモ版 日報・進捗</div>
+    <div class="tab" data-tab="chat">💬 相談チャットテンプレ</div>
+    <div class="tab" data-tab="timetable">🏫 時間割（HR学校風）</div>
+    <div class="tab" data-tab="skill">📐 スキルシート（案件欄）</div>
+    <div class="tab" data-tab="pdca">🔄 一人MTG（PDCA）</div>
+    <div class="tab" data-tab="mtg2">🎯 一人MTG2（目標・KPT）</div>
+    <div class="tab" data-tab="tpl">🧩 自由ひな形（日報）</div>
+  </div>
+
+  <!-- ============ TAB 1: 退勤前報告 ============ -->
+  <div class="panel active" id="panel-report">
+    <h2>① 基本情報</h2>
+    <div class="grid">
+      <div><label>日付</label><input id="r_date" placeholder="2026年4月1日(水)"></div>
+      <div><label>氏名</label><input id="r_name" placeholder="石黒友季子"></div>
+    </div>
+    <div class="grid3">
+      <div><label>場所</label>
+        <select id="r_place"><option>対面</option><option>リモート</option><option>在宅</option><option>ハイブリッド</option></select>
+      </div>
+      <div><label>勤務時間（開始〜終了）</label><input id="r_time" placeholder="9:00～18:00"></div>
+      <div><label>実働</label><input id="r_hours" placeholder="8h"></div>
+    </div>
+
+    <h2 style="margin-top:24px;">② 本日の業務内容</h2>
+    <p class="hint">タスクごとに 状態・目的・所要時間 を入力。状態は 完了／対応中／未完了。</p>
+    <div id="taskList"></div>
+    <button type="button" class="addbtn" onclick="addTask()">＋ タスクを追加</button>
+
+    <h2 style="margin-top:24px;">③ 成果・進捗</h2>
+    <div class="grid3">
+      <div><label>今日の成果物</label><input id="r_deliver" placeholder="◯◯を完成"></div>
+      <div><label>進捗率</label><input id="r_rate" placeholder="80%"></div>
+      <div><label>KPIに対する進捗</label><input id="r_kpi" placeholder="週次目標の60%"></div>
+    </div>
+
+    <h2 style="margin-top:24px;">④ 課題・問題点</h2>
+    <p class="hint">該当しない欄は空のままでOK（空欄は出力されません）。</p>
+    <div class="grid">
+      <div><label>1. 発生した問題</label><textarea id="r_p1"></textarea></div>
+      <div><label>2. 前提・背景</label><textarea id="r_p2"></textarea></div>
+      <div><label>3. やりたいこと</label><textarea id="r_p3"></textarea></div>
+      <div><label>4. 解決方法</label><textarea id="r_p4"></textarea></div>
+      <div><label>5. 環境</label><textarea id="r_p5"></textarea></div>
+      <div><label>6. 原因（仮説）</label><textarea id="r_p6"></textarea></div>
+    </div>
+    <label>7. 影響範囲</label><textarea id="r_p7"></textarea>
+
+    <h2 style="margin-top:24px;">⑤ 対応・アクション</h2>
+    <label>明日の対応予定</label><textarea id="r_action"></textarea>
+
+    <h2 style="margin-top:24px;">⑥ 学び・気づき</h2>
+    <div class="grid">
+      <div><label>今日の学び</label><textarea id="r_learn"></textarea></div>
+      <div><label>次に活かすこと</label><textarea id="r_next"></textarea></div>
+    </div>
+
+    <h2 style="margin-top:24px;">⑦ 共有事項（上長・関係者向け）</h2>
+    <div class="grid3">
+      <div><label>報告事項</label><textarea id="r_share"></textarea></div>
+      <div><label>相談事項</label><textarea id="r_consult"></textarea></div>
+      <div><label>支援依頼</label><textarea id="r_help"></textarea></div>
+    </div>
+
+    <h2 style="margin-top:24px;">⑧ 明日の予定</h2>
+    <div class="grid3">
+      <div><label>タスク</label><textarea id="r_tmtask"></textarea></div>
+      <div><label>想定時間</label><input id="r_tmtime" placeholder="09:00〜18:00（在宅）"></div>
+      <div><label>優先順位</label><textarea id="r_tmprio"></textarea></div>
+    </div>
+
+    <button class="gen" onclick="buildReport()">📋 業務日報を生成する</button>
+  </div>
+
+  <!-- ============ TAB 2: メモ版 ============ -->
+  <div class="panel" id="panel-memo">
+    <h2>ヘッダ</h2>
+    <div class="grid3">
+      <div><label>日付</label><input id="m_date" placeholder="2026/04/01（水）"></div>
+      <div><label>役割</label>
+        <select id="m_role"><option>IT研修講師</option><option>社内SE</option><option>SES</option><option>IT営業</option></select>
+      </div>
+      <div><label>気分</label>
+        <select id="m_mood"><option>😀</option><option>😐</option><option>😣</option></select>
+      </div>
+    </div>
+    <label>一言</label><input id="m_word" value="面白きこともなき世を面白く">
+
+    <label class="toggle"><input type="checkbox" id="m_tt_on"> 🕘 タイムテーブルを含める</label>
+    <div class="collapsible" id="m_tt_wrap">
+      <p class="hint">1行ずつ自由記入（例：09:00-10:00 ｜ 朝会・メール処理）。空なら標準枠を出力します。</p>
+      <textarea id="m_tt" style="min-height:120px"></textarea>
+    </div>
+
+    <h2 style="margin-top:22px;">✅ 今日すること</h2>
+    <p class="hint">1行＝1項目。チェックボックス [ ] が自動で付きます。</p>
+    <label>メイン業務</label><textarea id="m_today_main"></textarea>
+    <label>メイン業務以外（学習・整備・社内貢献）</label><textarea id="m_today_sub"></textarea>
+    <label>趣味枠（個人開発・記事・インプット）</label><textarea id="m_today_hobby"></textarea>
+    <label>今日 相談すること（@誰に / 何を / なぜ / 口頭 or Slack）</label><textarea id="m_today_talk"></textarea>
+
+    <h2 style="margin-top:22px;">📊 作業進捗</h2>
+    <label>✓ 完了したこと</label><textarea id="m_done"></textarea>
+    <label>→ 着手中・持ち越し</label><textarea id="m_wip"></textarea>
+    <h3>⚠ ブロッカー / 詰まり</h3>
+    <div class="grid">
+      <div><label>内容</label><input id="m_bl_what"></div>
+      <div><label>影響</label><input id="m_bl_eff"></div>
+      <div><label>必要なアクション</label><input id="m_bl_act"></div>
+      <div><label>相手</label><input id="m_bl_who"></div>
+    </div>
+
+    <h2 style="margin-top:22px;">🚩 依頼・相談 一覧</h2>
+    <label>📨 サポート依頼（@誰／内容／期限／状態）</label><textarea id="m_req_sup"></textarea>
+    <label>🔍 レビュー依頼（@誰／URL／観点／期限）</label><textarea id="m_req_rev"></textarea>
+    <label>👥 他の人と相談が必要（関係者／議題／形式／いつ）</label><textarea id="m_req_talk"></textarea>
+    <label>💭 その他・気になっていること</label><textarea id="m_req_etc"></textarea>
+
+    <h2 style="margin-top:22px;">📅 明日すること</h2>
+    <label>メイン業務</label><textarea id="m_tm_main"></textarea>
+    <label>メイン業務以外</label><textarea id="m_tm_sub"></textarea>
+    <label>趣味枠</label><textarea id="m_tm_hobby"></textarea>
+    <label>明日 相談すること</label><textarea id="m_tm_talk"></textarea>
+
+    <label class="toggle"><input type="checkbox" id="m_wk_on"> 🗓 今週／来週も含める（金曜の棚卸し用）</label>
+    <div class="collapsible" id="m_wk_wrap">
+      <label>今週すること（残り・メイン）</label><textarea id="m_wk_main"></textarea>
+      <label>今週すること（以外・趣味）</label><textarea id="m_wk_sub"></textarea>
+      <label>来週すること（メイン）</label><textarea id="m_nw_main"></textarea>
+      <label>来週すること（以外・趣味）</label><textarea id="m_nw_sub"></textarea>
+    </div>
+
+    <label class="toggle"><input type="checkbox" id="m_mo_on"> 📆 今月／来月も含める（月初・月末用）</label>
+    <div class="collapsible" id="m_mo_wrap">
+      <label>今月すること（月次目標）</label><textarea id="m_mo_main"></textarea>
+      <label>今月すること（以外・趣味）</label><textarea id="m_mo_sub"></textarea>
+      <label>来月すること</label><textarea id="m_nm_main"></textarea>
+    </div>
+
+    <h2 style="margin-top:22px;">🩺 デイリー習慣</h2>
+    <div class="checks" id="m_habits">
+      <label><input type="checkbox" value="☕ 休憩10分 × 社内記事ドラフト1段落"> ☕ 休憩10分 × 社内記事ドラフト1段落</label>
+      <label><input type="checkbox" value="🏁 定時退社（残業せず帰る）"> 🏁 定時退社（残業せず帰る）</label>
+      <label><input type="checkbox" value="📝 明日のタスクを書き切ってからPCを閉じる"> 📝 明日のタスクを書き切ってからPCを閉じる</label>
+      <label><input type="checkbox" value="🧹 受信トレイ／DMをゼロ（既読＋ピン整理）"> 🧹 受信トレイ／DMをゼロ（既読＋ピン整理）</label>
+      <label><input type="checkbox" value="🌙 持ち帰り思考をしない"> 🌙 持ち帰り思考をしない</label>
+    </div>
+
+    <h2 style="margin-top:22px;">🧠 退社前 1分セルフチェック</h2>
+    <div class="checks" id="m_self">
+      <label><input type="checkbox" value="今日の3大ToDoのうち最低1つは完了した"> 今日の3大ToDoのうち最低1つは完了した</label>
+      <label><input type="checkbox" value="😰 を抱えたまま帰ろうとしていない"> 😰 を抱えたまま帰ろうとしていない</label>
+      <label><input type="checkbox" value="明日の最初の30分で着手することが決まっている"> 明日の最初の30分で着手することが決まっている</label>
+      <label><input type="checkbox" value="来週繰越すべきタスクを「今週すること」に書いた"> 来週繰越すべきタスクを「今週すること」に書いた</label>
+    </div>
+
+    <button class="gen" onclick="buildMemo()">📝 メモ版を生成する</button>
+  </div>
+
+  <!-- ============ TAB 3: 相談チャット ============ -->
+  <div class="panel" id="panel-chat">
+    <h2>相談チャットテンプレ（Slack / Mattermost コピペ用）</h2>
+    <label>テンプレを選ぶ</label>
+    <select id="c_tpl" onchange="switchTpl()">
+      <option value="A">A：相談（判断を仰ぐ）</option>
+      <option value="B">B：質問（教えてほしい）</option>
+      <option value="C">C：レビュー依頼</option>
+      <option value="D">D：即時報告（障害／クレーム）</option>
+      <option value="E">E：連絡（返信不要）</option>
+      <option value="F">F：他の人と相談したい（巻き込み）</option>
+      <option value="G">G：朝会・夕会の簡易日報</option>
+      <option value="H">H：営業向け お礼＋次アクション</option>
+      <option value="I">I：進捗報告（ステータス・％／1分・3分・5分・PREP）</option>
+    </select>
+
+    <div class="tpl" data-tpl="A">
+      <label>状況</label><textarea id="cA_sit"></textarea>
+      <div class="grid"><div><label>選択肢A</label><input id="cA_a"></div><div><label>選択肢B</label><input id="cA_b"></div></div>
+      <label>私の推し案（理由）</label><input id="cA_push" placeholder="A寄り（理由：）">
+      <label>ほしい判断</label><input id="cA_want" value="OK / NG / 別案">
+    </div>
+    <div class="tpl" data-tpl="B" style="display:none">
+      <label>あなたの名前</label><input id="cB_name">
+      <label>何について</label><input id="cB_topic">
+      <label>何が分からないか</label><textarea id="cB_q"></textarea>
+      <label>自分で確認したこと</label><textarea id="cB_done"></textarea>
+      <div class="grid"><div><label>いつまでに方針が欲しいか</label><input id="cB_due"></div><div><label>業務影響</label><input id="cB_eff"></div></div>
+    </div>
+    <div class="tpl" data-tpl="C" style="display:none">
+      <label>対象URL</label><input id="cC_url">
+      <div class="grid"><div><label>見てほしい観点1</label><input id="cC_p1"></div><div><label>観点2</label><input id="cC_p2"></div></div>
+      <label>期限</label><input id="cC_due" placeholder="YYYY/MM/DD HH:MM まで">
+      <label>補足</label>
+      <select id="cC_note"><option>ザッと見でOK</option><option>詳細指摘歓迎</option><option>どちらでも</option></select>
+    </div>
+    <div class="tpl" data-tpl="D" style="display:none">
+      <label>事実</label><textarea id="cD_fact"></textarea>
+      <label>影響範囲</label><textarea id="cD_eff"></textarea>
+      <label>現在の対応</label><textarea id="cD_act"></textarea>
+      <label>判断ほしい点</label><textarea id="cD_want"></textarea>
+    </div>
+    <div class="tpl" data-tpl="E" style="display:none">
+      <label>変更・連絡内容</label><input id="cE_what" placeholder="◯◯を◯◯に変更しました">
+      <label>関連URL</label><input id="cE_url">
+      <label>影響</label><select id="cE_eff"><option>軽微</option><option>なし</option></select>
+    </div>
+    <div class="tpl" data-tpl="F" style="display:none">
+      <label>件名・議題</label><textarea id="cF_topic"></textarea>
+      <div class="grid"><div><label>△△さん（必要な理由）</label><input id="cF_p1"></div><div><label>□□さん（必要な理由）</label><input id="cF_p2"></div></div>
+      <div class="grid"><div><label>形式</label><select id="cF_form"><option>1on1</option><option>グループMTG</option><option>非同期スレッド</option></select></div>
+      <div><label>いつ頃</label><select id="cF_when"><option>本日中</option><option>今週中</option><option>来週前半</option></select></div></div>
+    </div>
+    <div class="tpl" data-tpl="G" style="display:none">
+      <label>日付</label><input id="cG_date" placeholder="2026/04/01（水）">
+      <label>昨日</label><textarea id="cG_y"></textarea>
+      <label>今日</label><textarea id="cG_t"></textarea>
+      <div class="grid"><div><label>ブロッカー</label><input id="cG_block" placeholder="なし"></div><div><label>相談</label><input id="cG_consult"></div></div>
+    </div>
+    <div class="tpl" data-tpl="H" style="display:none">
+      <label>本日の合意事項（1行＝1項目）</label><textarea id="cH_agree"></textarea>
+      <div class="grid"><div><label>次回までのアクション：弊社</label><input id="cH_us"></div><div><label>次回までのアクション：貴社</label><input id="cH_you"></div></div>
+      <div class="grid"><div><label>次回予定 日時</label><input id="cH_next" placeholder="YYYY/MM/DD HH:MM〜"></div><div><label>候補</label><input id="cH_cand"></div></div>
+    </div>
+    <div class="tpl" data-tpl="I" style="display:none">
+      <div class="grid"><div><label>報告の長さ</label>
+        <select id="cI_len"><option value="prep">PREP（結論→理由→例→結論）</option><option value="1">1分（廊下でサッと）</option><option value="3">3分（定例向け）</option><option value="5">5分（しっかり）</option></select>
+      </div><div><label>案件・テーマ</label><input id="cI_topic" placeholder="例：LPIC応用クラス 教材整備"></div></div>
+      <div class="grid3">
+        <div><label>全体ステータス</label>
+          <select id="cI_status"><option>🟢 順調</option><option>🟡 やや遅延</option><option>🔴 要対応</option><option>✅ 完了</option></select>
+        </div>
+        <div><label>全体進捗％</label><input id="cI_pct" placeholder="60" inputmode="numeric"></div>
+        <div><label>期限・納期（任意）</label><input id="cI_due" placeholder="5/30"></div>
+      </div>
+      <label>タスク（タップで追加。各タスクに状態と％）</label>
+      <div id="cI_taskList"></div>
+      <button type="button" class="addbtn" onclick="ciAddTask()">＋ タスクを追加</button>
+      <div class="grid"><div><label>次のアクション</label><textarea id="cI_next" placeholder="やること（1行＝1項目）"></textarea></div>
+        <div><label>リスク・困りごと（任意）</label><textarea id="cI_risk" placeholder="遅延要因・相談したいこと"></textarea></div></div>
+      <p class="tt-legend">💡 状態：🟢順調 / 🟡やや遅延 / 🔴要対応 / ✅完了。タスク％の平均から全体％を自動補完できます（空欄時）。</p>
+    </div>
+
+    <button class="gen" onclick="buildChat()">💬 チャット文面を生成する</button>
+  </div>
+
+  <!-- ============ TAB 4: 時間割（HR学校風） ============ -->
+  <div class="panel" id="panel-timetable">
+    <h2>🌅 朝のHR（朝に書く）</h2>
+    <div class="hr-card">
+      <div class="grid3">
+        <div><label>日付</label><input id="tt_date"></div>
+        <div><label>今日の天気（気分）</label>
+          <select id="tt_mood"><option>☀️ 快調</option><option>⛅ ふつう</option><option>🌧 いまいち</option></select>
+        </div>
+        <div><label>出席（勤務地）</label>
+          <select id="tt_place"><option>対面</option><option>リモート</option><option>在宅</option></select>
+        </div>
+      </div>
+      <label>今日のめあて（いちばん大事な1つ）</label>
+      <input id="tt_goal" placeholder="例：LPIC応用クラスの演習資料を完成させる">
+      <label>意気込み・一言</label>
+      <input id="tt_word" value="面白きこともなき世を面白く">
+    </div>
+
+    <h2>🕘 時間割（08:00〜18:00）</h2>
+    <p class="hint">朝に「予定」を埋める → 夕方に「実績」と達成度を入れる。予定時間と達成は下で自動計算します。</p>
+    <div class="grid">
+      <div><label>丸め単位（時間計算）</label>
+        <select id="round_unit" onchange="onRoundChange()">
+          <option value="5">5分単位</option>
+          <option value="10">10分単位</option>
+          <option value="15">15分単位</option>
+          <option value="30">30分単位</option>
+          <option value="60">1時間単位</option>
+        </select>
+      </div>
+      <div><label>丸め方</label>
+        <select id="round_mode" onchange="onRoundChange()">
+          <option value="round">四捨五入（最も近い単位）</option>
+          <option value="ceil">切り上げ（単位を必ず確保）</option>
+        </select>
+      </div>
+    </div>
+    <div class="tt-head">
+      <div>時限</div><div>区分</div><div>区分名</div><div>開始</div><div>終了</div><div>予定（やること）</div><div>実績（やったこと）</div><div>達成</div><div title="差し込み対応">⚡差込</div><div>予定分</div><div title="この下に差込追加">＋差</div><div></div>
+    </div>
+    <div id="ttList"></div>
+    <button type="button" class="addbtn" onclick="addPeriod()">＋ コマを追加</button>
+
+    <div class="tagbar-wrap">
+      <div class="tagbar-head">
+        <span class="bk-title" style="color:var(--orange-deep);font-weight:800;font-size:.9rem;">🏷 よく使うタグ（タップで挿入）</span>
+        <span class="hint" style="margin:0;">直前に触れた予定／実績欄に挿入されます</span>
+      </div>
+      <div id="tagButtons" class="tagbar"></div>
+      <div class="tagbar-add">
+        <input id="newTag" placeholder="新しいタグ名（#は不要）" onkeydown="if(event.key==='Enter'){addQuickTag();}">
+        <button type="button" class="mini-btn" onclick="addQuickTag()">＋追加</button>
+      </div>
+    </div>
+
+    <p class="tt-legend">
+      区分：<span class="kind-chip kc-lesson">授業</span><span class="kind-chip kc-meeting">会議</span><span class="kind-chip kc-work">作業</span><span class="kind-chip kc-break">休憩</span>
+    </p>
+    <p class="tt-legend">達成：◎=達成 ／ ○=一部 ／ △=未達 ／ —=該当なし。加重は ◎1.0・○0.5・△0。休憩コマは稼働に含めません。</p>
+
+    <h2 style="margin-top:22px;">📊 予定 vs 実績（自動計算）</h2>
+    <div class="calc">
+      <div class="cell"><div class="num" id="c_slots">0</div><div class="lab">稼働コマ</div></div>
+      <div class="cell"><div class="num" id="c_plan">0:00</div><div class="lab">予定 稼働時間</div></div>
+      <div class="cell"><div class="num" id="c_actual">0:00</div><div class="lab">実績（達成換算）</div></div>
+      <div class="cell"><div class="num" id="c_rate">0%</div><div class="lab">達成率</div></div>
+    </div>
+    <div class="bar"><i id="c_barfill"></i></div>
+    <p class="tt-legend" id="c_breakdown">◎0 ／ ○0 ／ △0 ／ 休憩0</p>
+    <div class="kindbar" id="c_kindbar" title="区分別の予定時間の割合"></div>
+    <p class="tt-legend" id="c_kindlabel">区分別 予定時間：授業 0:00 ／ 会議 0:00 ／ 作業 0:00</p>
+    <p class="tt-legend" id="c_taglabel" style="display:none;"></p>
+    <p class="hint">💡 予定・実績に <code>#資料作成</code> のように <code>#</code> でタグを書くと、タグごとの時間を積み上げ集計します（月末報告書にも反映）。</p>
+
+    <h2 style="margin-top:22px;">🏁 帰りのHR（夕方に書く）</h2>
+    <div class="cheer-card" id="cheerCard">
+      <div class="emoji" id="cheerEmoji">🌸</div>
+      <div class="title" id="cheerTitle"></div>
+      <div class="msg" id="cheerMsg"></div>
+    </div>
+    <div class="hr-card">
+      <div class="grid3">
+        <div><label>できたこと（Keep）</label><textarea id="tt_keep"></textarea></div>
+        <div><label>できなかった・課題（Problem）</label><textarea id="tt_problem"></textarea></div>
+        <div><label>明日へ（Try）</label><textarea id="tt_try"></textarea></div>
+      </div>
+      <label>先生から一言（自己評価・ねぎらい）</label>
+      <input id="tt_teacher" placeholder="例：午後の集中が良かった。明日は午前に難所を持ってこよう。">
+    </div>
+
+    <button class="gen" onclick="buildTimetable()">🏫 時間割＋振り返りを生成する</button>
+
+    <h2 style="margin-top:26px;">📅 30日ログ（保存・Excel入出力）</h2>
+    <p class="hint">「この日を保存」で日付ごとに記録され、ブラウザ内に貯まります（最大表示30日）。貯めた記録はExcel(.xlsx)とCSVで書き出し、CSVから取り込めます。データは端末内のみで外部送信しません。</p>
+    <div class="log-actions">
+      <button class="primary" onclick="saveDay()">💾 この日を保存／上書き</button>
+      <button onclick="exportXlsx()">📊 Excelエクスポート(.xlsx)</button>
+      <button onclick="exportCsv()">📄 CSVエクスポート</button>
+      <button onclick="document.getElementById('csvFile').click()">📥 CSVインポート</button>
+      <button class="danger" onclick="clearAllDays()">🗑 全消去</button>
+      <input type="file" id="csvFile" class="hidden-file" accept=".csv,text/csv" onchange="importCsv(this)">
+    </div>
+
+    <div id="aggPanel" style="display:none;">
+      <h3>区分別 累計時間（保存した全日）</h3>
+      <div class="agg">
+        <div class="cell"><div class="num" id="a_lesson">0:00</div><div class="lab">授業</div></div>
+        <div class="cell"><div class="num" id="a_meeting">0:00</div><div class="lab">会議</div></div>
+        <div class="cell"><div class="num" id="a_work">0:00</div><div class="lab">作業</div></div>
+        <div class="cell"><div class="num" id="a_break">0:00</div><div class="lab">休憩</div></div>
+      </div>
+      <p class="tt-legend" id="a_meta">保存日数 0日 ／ 平均達成率 0%</p>
+    </div>
+
+    <div class="daylist" id="dayList"><div class="empty">まだ保存された日がありません。</div></div>
+
+    <h2 style="margin-top:26px;">📋 月末報告書（時間集計つき）</h2>
+    <p class="hint">保存した日々のログから、区分別の時間集計（時間割で選んだ丸め単位）と「やったこと／達成したこと／課題／リーダーに伝えたいこと」をまとめた報告書を生成します。期間を空にすると保存した全件が対象です。</p>
+    <div class="grid3">
+      <div><label>対象月（任意・見出しに表示）</label><input id="rep_month" placeholder="2026年5月"></div>
+      <div><label>期間 開始日（任意）</label><input id="rep_from" placeholder="2026/05/01"></div>
+      <div><label>期間 終了日（任意）</label><input id="rep_to" placeholder="2026/05/31"></div>
+    </div>
+    <label>リーダーに伝えたいこと（自由記入・任意）</label>
+    <textarea id="rep_leader" placeholder="来月の体制相談、評価面談で話したい点、リソース希望など"></textarea>
+    <button class="gen" onclick="buildMonthlyReport()">📋 月末報告書を生成する（保存ログから）</button>
+    <div class="log-actions">
+      <button onclick="exportMonthlyXlsx()">📊 月末報告書をExcelで出力（保存ログ・タスク工数／丸め単位は上の設定）</button>
+    </div>
+
+    <div class="sk-block" style="background:linear-gradient(160deg,#fff6e9,#fff);margin-top:14px;">
+      <div class="bk-head"><span class="bk-title">📝 メモから月末報告書を作る（30日分を一括貼り付け）</span></div>
+      <p class="hint" style="margin-top:4px;">1か月ぶんのメモをまとめて貼り付け、または複数のメモCSV/テキストを読み込んで月末報告書を作れます。各行に <code>（90分）</code> や <code>90分</code>・<code>1h</code>・<code>1:30</code> のような時間、<code>#タグ</code> を書くと、タスクごと・タグごとの時間も集計します。日付行（例：2026/05/01）で日を区切れます。</p>
+      <textarea id="rep_memo" placeholder="例）&#10;2026/05/01&#10;・教材スライド作成（90分）#資料作成&#10;・演習レビュー 45分 #レビュー&#10;2026/05/02&#10;・模試の採点 1h #採点&#10;・教材スライド作成 30分 #資料作成" style="min-height:120px"></textarea>
+      <div class="log-actions">
+        <button onclick="document.getElementById('repMemoFile').click()">📄 メモCSV/テキストを読み込む（追記）</button>
+        <input type="file" id="repMemoFile" class="hidden-file" accept=".csv,.txt,text/plain,text/csv" onchange="repMemoImport(this)">
+        <button class="primary" onclick="buildMonthlyReportFromMemo()">📋 メモから月末報告書を生成</button>
+        <button onclick="exportMonthlyXlsxFromMemo()">📊 メモからExcel出力（タスク工数／丸め単位は上の設定）</button>
+      </div>
+    </div>
+
+    <h2 style="margin-top:26px;">🛠 個人用カイゼンMTG（Keep / Try / Change）</h2>
+    <p class="hint">自分ひとりの改善ミーティング用。保存した日々のKeep・Problem・Try・達成度を集めて、KPTC（続ける／試す／やめる・変える）に整理します。趣味枠とChangeは手入力で足せます。</p>
+    <div class="grid">
+      <div><label>趣味枠の振り返り（個人開発・記事・インプットなど）</label><textarea id="kz_hobby" placeholder="今週やった個人開発・記事・学習（1行＝1項目）"></textarea></div>
+      <div><label>Change：やめる・変えること（自由記入）</label><textarea id="kz_change" placeholder="やめたい習慣、変えたい進め方（1行＝1項目）"></textarea></div>
+    </div>
+    <button class="gen" onclick="buildKaizenMTG()">🛠 カイゼンMTGを生成する</button>
+  </div>
+
+  <!-- ============ TAB 5: スキルシート（案件欄） ============ -->
+  <div class="panel" id="panel-skill">
+    <h2>📐 スキルシート 案件欄（1案件 = 1セット）</h2>
+    <p class="hint">見本PDF実測のサイズ感をガイド表示します。毎日1案件ずつ書いて「この案件を保存」で30件までスタックできます。企業名・システム名の特定表現はNG。</p>
+
+    <div class="sk-block" style="background:linear-gradient(160deg,#fff6e9,#fff);">
+      <div class="bk-head"><span class="bk-title">🗓 30日分から下書きを作る（1か月→スキルシート）</span></div>
+      <p class="hint" style="margin-top:4px;">1か月ぶんの日報メモを集めて、スキルシートの素材に変換します。① 時間割タブの30日ログから、または ② メモ版日報のテキスト/CSVを貼り付け・読み込み のどちらからでもOK。</p>
+      <div class="log-actions">
+        <button class="primary" onclick="skFromLog()">📥 時間割の30日ログから取り込む</button>
+        <button onclick="document.getElementById('skMemoFile').click()">📄 メモ日報CSV/テキストを読み込む</button>
+        <input type="file" id="skMemoFile" class="hidden-file" accept=".csv,.txt,text/plain,text/csv" onchange="skMemoImport(this)">
+      </div>
+      <label>メモを貼り付け（複数日OK。日付行＋作業行をそのまま貼ってください）</label>
+      <textarea id="sk_memoPaste" placeholder="例）&#10;2026/05/01&#10;・LPIC教材のスライド作成&#10;・演習問題のレビュー実施&#10;2026/05/02&#10;[x] 模試の採点&#10;..." style="min-height:90px"></textarea>
+      <button type="button" class="addbtn" onclick="skParsePaste()">↑ 貼り付けたメモから候補を抽出</button>
+
+      <div id="skDraftPanel" style="display:none;margin-top:12px;">
+        <p class="tt-legend" id="sk_draftMeta"></p>
+        <h3 style="margin:10px 0 4px;">作業内容の候補（チェックしたものを「作業内容」に流し込み）</h3>
+        <div class="sk-check" id="sk_candidates" style="max-height:260px;overflow:auto;border:1px solid var(--line-soft);border-radius:10px;padding:8px;"></div>
+        <div class="log-actions" style="margin-top:8px;">
+          <button class="primary" onclick="skApplyCandidates()">✅ チェックした候補を作業内容へ</button>
+          <button onclick="skCheckAllCand(true)">全選択</button>
+          <button onclick="skCheckAllCand(false)">全解除</button>
+          <button onclick="skFillDraftMeta()">📝 期間・対応工程も下書きに反映</button>
+        </div>
+      </div>
+    </div>
+
+    <h3>メタデータ（外枠9項目）</h3>
+    <div class="grid3">
+      <div><label>No</label><input id="sk_no" placeholder="1"></div>
+      <div><label>業種（2,3文字）</label><input id="sk_industry" placeholder="金融"></div>
+      <div><label>役割（2,3文字）</label><input id="sk_role" placeholder="SE"></div>
+    </div>
+    <div class="grid">
+      <div><label>期間（1行＋1行）</label><input id="sk_period" placeholder="4年8ケ月 ／ 2020年02月～2024年09月"></div>
+      <div><label>規模</label><input id="sk_scale" placeholder="全体20名 ／ チーム7名"></div>
+    </div>
+    <div class="grid3">
+      <div><label>言語／ツール</label><input id="sk_lang" placeholder="Java（SpringBoot）HTML CSS3 …"></div>
+      <div><label>DB</label><input id="sk_db" placeholder="PostgreSQL"></div>
+      <div><label>サーバ／OS</label><input id="sk_os" placeholder="Windows Server"></div>
+    </div>
+    <div class="grid">
+      <div><label>環境／ミドルウェア</label><input id="sk_mw" placeholder="Git spring"></div>
+      <div><label>担当工程（5つ程度）</label><input id="sk_phase" placeholder="要件定義、基本設計、詳細設計、製造、テスト"></div>
+    </div>
+
+    <h3 style="margin-top:18px;">企業・プロジェクト名（タイトル行）</h3>
+    <div class="sk-block">
+      <div class="bk-head"><span class="bk-title">タイトル</span>
+        <span class="sk-guide">1行・15〜25文字／業界＋システム種別／企業名NG</span>
+        <span class="sk-count" id="sk_c_title">0字</span></div>
+      <input id="sk_title" placeholder="例：金融業　社内システム開発　※FEとBE開発" oninput="skCount()">
+    </div>
+
+    <div class="sk-block">
+      <div class="bk-head"><span class="bk-title">■システム内容</span>
+        <span class="sk-guide">1行・15〜25文字／ユーザー・業界・目的を端的に</span>
+        <span class="sk-count" id="sk_c_sys">0字</span></div>
+      <textarea id="sk_sys" placeholder="例：金融系企業の社内システム開発支援" oninput="skCount()"></textarea>
+    </div>
+
+    <div class="sk-block">
+      <div class="bk-head"><span class="bk-title">■対応工程</span>
+        <span class="sk-guide">2〜3行・各行15〜25文字／「工程〜（yyyy/mm〜yyyy/mm）」</span>
+        <span class="sk-count" id="sk_c_proc">0字 / 0行</span></div>
+      <textarea id="sk_proc" placeholder="要件定義〜詳細設計（2020/01〜2022/12）&#10;製造〜（2023/01〜2023/11）&#10;運用保守〜（2023/12〜）" oninput="skCount()"></textarea>
+    </div>
+
+    <div class="sk-block">
+      <div class="bk-head"><span class="bk-title">■担当業務</span>
+        <span class="sk-guide">2〜3行・各行10〜30文字／役割と、何を担ったか</span>
+        <span class="sk-count" id="sk_c_duty">0字 / 0行</span></div>
+      <textarea id="sk_duty" placeholder="SEとしてPJに参画&#10;金融業向けの社内システムの新規開発に伴い要件定義から対応" oninput="skCount()"></textarea>
+    </div>
+
+    <div class="sk-block">
+      <div class="bk-head"><span class="bk-title">■作業内容（・箇条書き）</span>
+        <span class="sk-guide">10〜12項目・各10〜20文字／動詞語尾で揃える</span>
+        <span class="sk-count" id="sk_c_work">0項目</span></div>
+      <div id="sk_workList"></div>
+      <button type="button" class="addbtn" onclick="skAddWork()">＋ 行を追加</button>
+    </div>
+
+    <div class="sk-block">
+      <div class="bk-head"><span class="bk-title">■成果物</span>
+        <span class="sk-guide">1〜2行・各15〜25文字／可能なら数字を入れる</span>
+        <span class="sk-count" id="sk_c_out">0字 / 0行</span></div>
+      <textarea id="sk_out" placeholder="例：要件定義書から報告書などの各種ドキュメント" oninput="skCount()"></textarea>
+    </div>
+
+    <h3 style="margin-top:18px;">本文ボリューム判定</h3>
+    <p class="tt-legend">本文セル合計：<strong id="sk_total">0</strong> 文字 ／ 推定ケース：<span class="sk-case" id="sk_case">—</span></p>
+    <p class="tt-legend">A=長期(約300字) ／ B=中期(約100〜150字) ／ C=短期(約100字)。見本PDF実測ベースの目安です。</p>
+
+    <h3 style="margin-top:18px;">📊 提出前チェック</h3>
+    <div class="sk-check" id="sk_checks">
+      <label><input type="checkbox"> すべての■ブロックが埋まっている（5ブロック）</label>
+      <label><input type="checkbox"> 企業名・システム名の特定表現が無い</label>
+      <label><input type="checkbox"> 作業内容の箇条書きが動詞語尾で揃っている</label>
+      <label><input type="checkbox"> 対応工程に期間（yyyy/mm〜yyyy/mm）が入っている</label>
+      <label><input type="checkbox"> 成果物に可能な限り数字を入れた</label>
+      <label><input type="checkbox"> 担当工程と本文の内容が一致している</label>
+    </div>
+
+    <button class="gen" onclick="buildSkill()">📐 スキルシート案件欄を生成する</button>
+
+    <h2 style="margin-top:26px;">📅 30日ログ（案件スタック・Excel入出力）</h2>
+    <p class="hint">「この案件を保存」で1件ずつ貯まります（最大30件表示）。Excel(.xlsx)・CSVで書き出し、CSVから取り込めます。データは端末内のみで外部送信しません。</p>
+    <div class="log-actions">
+      <button class="primary" onclick="skSave()">💾 この案件を保存／上書き</button>
+      <button onclick="skExportXlsx()">📊 Excelエクスポート(.xlsx)</button>
+      <button onclick="skExportCsv()">📄 CSVエクスポート</button>
+      <button onclick="document.getElementById('skCsvFile').click()">📥 CSVインポート</button>
+      <button class="danger" onclick="skClearAll()">🗑 全消去</button>
+      <input type="file" id="skCsvFile" class="hidden-file" accept=".csv,text/csv" onchange="skImportCsv(this)">
+    </div>
+    <p class="tt-legend" id="sk_logmeta" style="display:none;"></p>
+    <div class="daylist" id="skList"><div class="empty">まだ保存された案件がありません。</div></div>
+  </div>
+
+  <!-- ============ TAB 6: 一人MTG（PDCA） ============ -->
+  <div class="panel" id="panel-pdca">
+    <h2>🔄 一人MTG（PDCA）</h2>
+    <p class="hint">ひとりで回す改善ミーティング。各ステップに時間を区切って集中できます。「▶ MTG開始」で Plan→Do→Check→Act を自動で進めます。データは端末内のみ。</p>
+
+    <div class="pdca-timer" id="pdcaTimer">
+      <div class="phase" id="pd_phase">準備OK</div>
+      <div class="clock" id="pd_clock">00:00</div>
+      <div class="sub" id="pd_sub">「▶ MTG開始」で Plan から始まります</div>
+      <div class="pdca-bar"><i id="pd_barfill"></i></div>
+      <div class="pdca-ctrl">
+        <button class="primary" id="pd_startBtn" onclick="pdcaStart()">▶ MTG開始（自動）</button>
+        <button onclick="pdcaPause()">⏸ 一時停止</button>
+        <button onclick="pdcaSkip()">⏭ 次のステップ</button>
+        <button onclick="pdcaReset()">↺ リセット</button>
+      </div>
+      <div class="pdca-ctrl" style="margin-top:6px;">
+        <span class="sub">単発タイマー：</span>
+        <button onclick="pdcaQuick(3)">3分</button>
+        <button onclick="pdcaQuick(5)">5分</button>
+        <button onclick="pdcaQuick(10)">10分</button>
+        <button onclick="pdcaQuick(15)">15分</button>
+      </div>
+      <label style="display:flex;align-items:center;justify-content:center;gap:6px;margin-top:8px;font-size:.8rem;color:var(--ink-soft);">
+        <input type="checkbox" id="pd_sound" checked style="width:auto;"> ステップ終了時に音を鳴らす
+      </label>
+    </div>
+
+    <div class="pdca-step" data-phase="P">
+      <div class="hd"><span class="nm">📝 Plan（計画）</span>
+        <span class="mins">分 <input id="pd_min_P" type="number" value="3" min="1" max="60"></span></div>
+      <textarea id="pd_plan" placeholder="今日/今週の目標、やること、優先順位（1行＝1項目）"></textarea>
+    </div>
+    <div class="pdca-step" data-phase="D">
+      <div class="hd"><span class="nm">🏃 Do（実行）</span>
+        <span class="mins">分 <input id="pd_min_D" type="number" value="10" min="1" max="60"></span></div>
+      <textarea id="pd_do" placeholder="実際にやったこと・進んだこと"></textarea>
+    </div>
+    <div class="pdca-step" data-phase="C">
+      <div class="hd"><span class="nm">🔍 Check（評価）</span>
+        <span class="mins">分 <input id="pd_min_C" type="number" value="5" min="1" max="60"></span></div>
+      <textarea id="pd_check" placeholder="うまくいった点・課題・達成度（保存ログから下書きできます）"></textarea>
+    </div>
+    <div class="pdca-step" data-phase="A">
+      <div class="hd"><span class="nm">🚀 Act（改善）</span>
+        <span class="mins">分 <input id="pd_min_A" type="number" value="2" min="1" max="60"></span></div>
+      <textarea id="pd_act" placeholder="次にどう動くか・改善アクション（1行＝1項目）"></textarea>
+    </div>
+
+    <div class="log-actions">
+      <button onclick="pdcaDraftFromLog()">📥 保存ログからCheck/Actを下書き</button>
+    </div>
+    <button class="gen" onclick="buildPdca()">🔄 一人MTG（PDCA）を生成する</button>
+  </div>
+
+  <!-- ============ TAB: 一人MTG2（目標・KPT） ============ -->
+  <div class="panel" id="panel-mtg2">
+    <h2>🎯 一人MTG2（目標設定 ＋ KPT）</h2>
+    <p class="hint">「最低限の目標」と「最高の目標」を期日・時間つきで立て、Keep / Problem / Try ＋ Change でふりかえる、ひとり作戦会議です。データは端末内のみ。</p>
+
+    <h3>🎯 目標設定（2段階＋期日）</h3>
+    <div class="grid">
+      <div><label>テーマ・案件（任意）</label><input id="g2_theme" placeholder="例：LPIC応用クラス 教材整備"></div>
+      <div><label>期日（いつまでに）</label><input id="g2_due" placeholder="2026/05/30（金）"></div>
+    </div>
+    <div class="grid">
+      <div><label>🟢 最低限の目標（これは必ず）</label><textarea id="g2_min" placeholder="ここまでできれば合格ライン"></textarea>
+        <label>所要時間の見込み</label><input id="g2_min_time" placeholder="例：2時間 / 90分"></div>
+      <div><label>🌟 最高の目標（できたら最高）</label><textarea id="g2_max" placeholder="理想までいけたらここまで"></textarea>
+        <label>所要時間の見込み</label><input id="g2_max_time" placeholder="例：1日 / 4時間"></div>
+    </div>
+
+    <h3 style="margin-top:18px;">🔁 ふりかえり（KPT ＋ Change）</h3>
+    <div class="grid">
+      <div><label>✅ Keep（続けたい・うまくいった）</label><textarea id="g2_keep" placeholder="1行＝1項目"></textarea></div>
+      <div><label>🌧 Problem（課題・困りごと）</label><textarea id="g2_problem" placeholder="1行＝1項目"></textarea></div>
+    </div>
+    <div class="grid">
+      <div><label>🌱 Try（次に試す）</label><textarea id="g2_try" placeholder="1行＝1項目"></textarea></div>
+      <div><label>🔄 Change（やめる・変える）</label><textarea id="g2_change" placeholder="1行＝1項目"></textarea></div>
+    </div>
+
+    <div class="log-actions">
+      <button onclick="mtg2DraftFromLog()">📥 保存ログからKeep/Problem/Tryを下書き</button>
+    </div>
+    <button class="gen" onclick="buildMtg2()">🎯 一人MTG2を生成する</button>
+  </div>
+
+  <!-- ============ TAB 7: 自由ひな形（日報） ============ -->
+  <div class="panel" id="panel-tpl">
+    <h2>🧩 自由ひな形（日報）</h2>
+    <p class="hint">あなたの日報フォーマットを自由に登録して使えます。本文の中に <code>{{案件名}}</code> のように <code>{{ }}</code> で差し込み欄を書くと、下に入力欄が自動で出ます。埋めて「生成」すると差し込み済みの日報が出力されます。複数のひな形を保存・切替でき、JSONで書き出し／取り込みもできます。データは端末内のみ。</p>
+
+    <div class="tpl-saved" id="tpl_savedList"></div>
+
+    <div class="grid">
+      <div><label>ひな形の名前</label><input id="tpl_name" placeholder="例：2026年5月版 日報"></div>
+      <div style="display:flex;align-items:flex-end;gap:6px;">
+        <button type="button" class="addbtn" style="flex:1" onclick="tplSave()">💾 このひな形を保存／上書き</button>
+        <button type="button" class="addbtn" onclick="tplNew()">＋ 新規</button>
+      </div>
+    </div>
+
+    <label>ひな形の本文（<code>{{差し込み名}}</code> を自由に書けます）</label>
+    <textarea id="tpl_body" oninput="tplScan()" placeholder="例）&#10;【業務日報】{{日付}}&#10;氏名：{{氏名}}&#10;&#10;■今日の作業&#10;{{今日やったこと}}&#10;&#10;■所感・課題&#10;{{所感}}&#10;&#10;■明日の予定&#10;{{明日の予定}}" style="min-height:160px;font-family:'SFMono-Regular',Consolas,Menlo,monospace;"></textarea>
+    <div class="tpl-saved">
+      <span class="hint" style="margin:0;">挿入：</span>
+      <button type="button" class="tpl-chip" onclick="tplInsertPh('日付')">{{日付}}</button>
+      <button type="button" class="tpl-chip" onclick="tplInsertPh('日時')">{{日時}}</button>
+      <button type="button" class="tpl-chip" onclick="tplInsertPh('曜日')">{{曜日}}</button>
+      <button type="button" class="tpl-chip" onclick="tplInsertPh('時刻')">{{時刻}}</button>
+      <button type="button" class="tpl-chip" onclick="tplInsertPh('氏名')">{{氏名}}</button>
+      <button type="button" class="tpl-chip" onclick="tplInsertPh('今日やったこと')">{{今日やったこと}}</button>
+      <button type="button" class="tpl-chip" onclick="tplInsertPh('所感')">{{所感}}</button>
+      <button type="button" class="tpl-chip" onclick="tplInsertPh('明日の予定')">{{明日の予定}}</button>
+    </div>
+
+    <h3 style="margin-top:16px;">差し込み入力</h3>
+    <div class="tpl-fields" id="tpl_fields"><div class="empty">本文に <code>{{ }}</code> を書くと、ここに入力欄が出ます。</div></div>
+
+    <div class="log-actions">
+      <button onclick="tplExport()">⬇️ ひな形をJSONで書き出し</button>
+      <button onclick="document.getElementById('tplFile').click()">📥 JSONを取り込み</button>
+      <input type="file" id="tplFile" class="hidden-file" accept=".json,application/json" onchange="tplImport(this)">
+    </div>
+    <button class="gen" onclick="buildTplDoc()">🧩 このひな形で日報を生成する</button>
+  </div>
+
+  <!-- ============ OUTPUT ============ -->
+  <div class="outwrap">
+    <div class="outhead">
+      <h2>生成結果</h2>
+      <div class="outbtns">
+        <button onclick="reportFromOutput()">📋 今日の日報</button>
+        <button onclick="weeklyReviewFromOutput()">🗓 週次振り返り</button>
+        <button onclick="kaizenMTGFromOutput()">🛠 カイゼンMTG</button>
+        <button onclick="monthlyReportFromOutput()">📋 月末報告書</button>
+        <button onclick="pdcaFromOutput()">🔄 一人MTG</button>
+        <button onclick="mtg2FromOutput()">🎯 一人MTG2</button>
+        <button onclick="skillFromOutput()">📐 スキルシート</button>
+        <button onclick="tplDocFromOutput()">🧩 ひな形日報</button>
+        <button onclick="copyOut()">📋 コピー</button>
+        <button onclick="downloadOut('txt')">⬇️ テキスト保存(.txt)</button>
+        <button onclick="downloadOut('md')">⬇️ マークダウン保存(.md)</button>
+        <button onclick="document.getElementById('output').value=''">🗑 クリア</button>
+      </div>
+    </div>
+    <p class="hint" id="mdNote" style="display:none;margin:0 0 8px;">
+      💡 メモ版は「テキスト保存」で罫線レイアウト版、「マークダウン保存」で見出し・チェックボックス付きのMarkdown版を保存します。
+    </p>
+    <textarea id="output" placeholder="ここに生成結果が表示されます。"></textarea>
+  </div>
+
+  <p class="foot">🐰 うさうさ先生 ─ 面白きこともなき世を面白く</p>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+"use strict";
+var currentTab = "report";
+var BAR  = "━".repeat(28);
+var BAR2 = "─".repeat(28);
+// 生成結果を txt / md の2形式で保持（ダウンロード時に出し分け）
+var lastOut = { txt:"", md:"" };
+
+/* ---- helpers ---- */
+function v(id){ var el=document.getElementById(id); return el ? (el.value||"").trim() : ""; }
+function linesOf(id){
+  var el=document.getElementById(id); if(!el) return [];
+  return (el.value||"").split("\n").map(function(s){return s.trim();}).filter(Boolean);
+}
+function block(label, items, mark){
+  // returns lines: each item prefixed with mark; empty -> nothing
+  if(!items.length) return "";
+  return items.map(function(s){ return mark + s; }).join("\n");
+}
+function today(){
+  var d=new Date(), z=function(n){return (n<10?"0":"")+n;};
+  return d.getFullYear()+z(d.getMonth()+1)+z(d.getDate());
+}
+// 曜日つき日付・時刻ヘルパ（自由ひな形の初期テンプレ用）
+function nowParts(){
+  var d=new Date(), z=function(n){return (n<10?"0":"")+n;};
+  var w=["日","月","火","水","木","金","土"][d.getDay()];
+  return {
+    date: d.getFullYear()+"/"+z(d.getMonth()+1)+"/"+z(d.getDate())+"（"+w+"）", // 2026/05/21（木）
+    dateJp: d.getFullYear()+"年"+(d.getMonth()+1)+"月"+d.getDate()+"日（"+w+"）",
+    weekday: w+"曜日",
+    time: z(d.getHours())+":"+z(d.getMinutes()),
+    datetime: d.getFullYear()+"/"+z(d.getMonth()+1)+"/"+z(d.getDate())+"（"+w+"） "+z(d.getHours())+":"+z(d.getMinutes())
+  };
+}
+
+/* ---- tabs ---- */
+document.querySelectorAll(".tab").forEach(function(t){
+  t.addEventListener("click", function(){
+    document.querySelectorAll(".tab").forEach(function(x){x.classList.remove("active");});
+    document.querySelectorAll(".panel").forEach(function(x){x.classList.remove("active");});
+    t.classList.add("active");
+    currentTab = t.dataset.tab;
+    document.getElementById("panel-"+currentTab).classList.add("active");
+    document.getElementById("mdNote").style.display = (currentTab==="memo"||currentTab==="timetable"||currentTab==="skill"||currentTab==="pdca"||currentTab==="mtg2") ? "block" : "none";
+  });
+});
+
+/* ---- collapsibles ---- */
+function bindToggle(cbId, wrapId){
+  var cb=document.getElementById(cbId);
+  cb.addEventListener("change", function(){
+    document.getElementById(wrapId).classList.toggle("open", cb.checked);
+  });
+}
+bindToggle("m_tt_on","m_tt_wrap");
+bindToggle("m_wk_on","m_wk_wrap");
+bindToggle("m_mo_on","m_mo_wrap");
+
+/* ---- TAB1 dynamic tasks ---- */
+function addTask(){
+  var row=document.createElement("div");
+  row.className="task-row";
+  var name=document.createElement("input"); name.className="t-name"; name.placeholder="タスク名";
+  var sel=document.createElement("select"); sel.className="t-status";
+  ["完了","対応中","未完了"].forEach(function(s){var o=document.createElement("option");o.textContent=s;sel.appendChild(o);});
+  var pur=document.createElement("input"); pur.className="t-purpose"; pur.placeholder="目的（〜のため）";
+  var tim=document.createElement("input"); tim.className="t-time"; tim.placeholder="所要時間 例:09:00~12:00";
+  var del=document.createElement("button"); del.type="button"; del.className="del"; del.textContent="×";
+  del.onclick=function(){ row.remove(); };
+  row.appendChild(name); row.appendChild(sel); row.appendChild(pur); row.appendChild(tim); row.appendChild(del);
+  document.getElementById("taskList").appendChild(row);
+}
+function readTasks(){
+  return [].slice.call(document.querySelectorAll("#taskList .task-row")).map(function(r){
+    return {
+      name:r.querySelector(".t-name").value.trim(),
+      status:r.querySelector(".t-status").value,
+      purpose:r.querySelector(".t-purpose").value.trim(),
+      time:r.querySelector(".t-time").value.trim()
+    };
+  }).filter(function(t){return t.name;});
+}
+
+/* ---- TAB1 build: 退勤前報告（：は残す・記号は消す） ---- */
+function buildReport(){
+  currentTab="report";
+  var o=[];
+  o.push("① 基本情報");
+  o.push("・日付："+v("r_date"));
+  o.push("・氏名："+v("r_name"));
+  o.push("・場所："+v("r_place"));
+  var wt=v("r_time"), wh=v("r_hours");
+  o.push("・勤務時間："+wt+(wh?("("+wh+")"):""));
+  o.push("");
+
+  var tasks=readTasks();
+  o.push("② 本日の業務内容");
+  if(tasks.length){
+    tasks.forEach(function(t,i){ o.push((i+1)+"．"+t.name+"："+t.status); });
+    var purposes=tasks.filter(function(t){return t.purpose;});
+    if(purposes.length){
+      o.push(""); o.push("各タスクの目的");
+      tasks.forEach(function(t,i){ if(t.purpose) o.push((i+1)+"．"+t.purpose); });
+    }
+    var times=tasks.filter(function(t){return t.time;});
+    if(times.length){
+      o.push(""); o.push("所要時間");
+      tasks.forEach(function(t,i){ if(t.time) o.push((i+1)+"．"+t.time); });
+    }
+  }
+  o.push("");
+
+  o.push("③ 成果・進捗");
+  o.push("今日の成果物："+v("r_deliver"));
+  o.push("進捗率："+v("r_rate"));
+  o.push("KPIに対する進捗："+v("r_kpi"));
+  o.push("");
+
+  o.push("④ 課題・問題点");
+  var probs=[
+    ["発生した問題", v("r_p1")],["前提・背景", v("r_p2")],["やりたいこと", v("r_p3")],
+    ["解決方法", v("r_p4")],["環境", v("r_p5")],["原因（仮説）", v("r_p6")],["影響範囲", v("r_p7")]
+  ].filter(function(p){return p[1];});
+  if(probs.length){ probs.forEach(function(p,i){ o.push((i+1)+"．"+p[0]+"："+p[1]); }); }
+  else { o.push("特になし"); }
+  o.push("");
+
+  o.push("⑤ 対応・アクション");
+  o.push("明日の対応予定："+v("r_action"));
+  o.push("");
+
+  o.push("⑥ 学び・気づき");
+  o.push("今日の学び："+v("r_learn"));
+  o.push("次に活かすこと："+v("r_next"));
+  o.push("");
+
+  o.push("⑦ 共有事項（上長・関係者向け）");
+  o.push("報告事項："+v("r_share"));
+  o.push("相談事項："+v("r_consult"));
+  o.push("支援依頼："+v("r_help"));
+  o.push("");
+
+  o.push("⑧ 明日の予定");
+  o.push("タスク："+v("r_tmtask"));
+  o.push("想定時間："+v("r_tmtime"));
+  o.push("優先順位："+v("r_tmprio"));
+
+  /* ===== Markdown版（記号は使うが内容は同一） ===== */
+  var m=[];
+  m.push("# 業務日報");
+  m.push("");
+  m.push("## ① 基本情報");
+  m.push("");
+  m.push("- 日付："+v("r_date"));
+  m.push("- 氏名："+v("r_name"));
+  m.push("- 場所："+v("r_place"));
+  m.push("- 勤務時間："+wt+(wh?("（"+wh+"）"):""));
+  m.push("");
+  m.push("## ② 本日の業務内容");
+  m.push("");
+  if(tasks.length){
+    tasks.forEach(function(t,i){ m.push((i+1)+". "+t.name+"："+t.status); });
+    var purM=tasks.filter(function(t){return t.purpose;});
+    if(purM.length){
+      m.push(""); m.push("### 各タスクの目的");
+      tasks.forEach(function(t,i){ if(t.purpose) m.push((i+1)+". "+t.purpose); });
+    }
+    var timM=tasks.filter(function(t){return t.time;});
+    if(timM.length){
+      m.push(""); m.push("### 所要時間");
+      tasks.forEach(function(t,i){ if(t.time) m.push((i+1)+". "+t.time); });
+    }
+  }
+  m.push("");
+  m.push("## ③ 成果・進捗");
+  m.push("");
+  m.push("- 今日の成果物："+v("r_deliver"));
+  m.push("- 進捗率："+v("r_rate"));
+  m.push("- KPIに対する進捗："+v("r_kpi"));
+  m.push("");
+  m.push("## ④ 課題・問題点");
+  m.push("");
+  if(probs.length){ probs.forEach(function(p,i){ m.push((i+1)+". **"+p[0]+"**："+p[1]); }); }
+  else { m.push("特になし"); }
+  m.push("");
+  m.push("## ⑤ 対応・アクション");
+  m.push("");
+  m.push("- 明日の対応予定："+v("r_action"));
+  m.push("");
+  m.push("## ⑥ 学び・気づき");
+  m.push("");
+  m.push("- 今日の学び："+v("r_learn"));
+  m.push("- 次に活かすこと："+v("r_next"));
+  m.push("");
+  m.push("## ⑦ 共有事項（上長・関係者向け）");
+  m.push("");
+  m.push("- 報告事項："+v("r_share"));
+  m.push("- 相談事項："+v("r_consult"));
+  m.push("- 支援依頼："+v("r_help"));
+  m.push("");
+  m.push("## ⑧ 明日の予定");
+  m.push("");
+  m.push("- タスク："+v("r_tmtask"));
+  m.push("- 想定時間："+v("r_tmtime"));
+  m.push("- 優先順位："+v("r_tmprio"));
+
+  setOut(o.join("\n"), m.join("\n"));
+}
+
+/* ---- TAB2 build: メモ版 ---- */
+function memoSection(title, pairs){
+  // pairs: [labelOrNull, lines[]] ; lines already prefixed
+  var has=pairs.some(function(p){return p[1] && p[1].length;});
+  if(!has) return "";
+  var s=[BAR, title, BAR];
+  pairs.forEach(function(p){
+    if(!(p[1] && p[1].length)) return;
+    if(p[0]) s.push("▼ "+p[0]);
+    s.push(p[1].join("\n"));
+    s.push("");
+  });
+  return s.join("\n").replace(/\n+$/,"")+"\n";
+}
+function chk(id){ return linesOf(id).map(function(s){return "[ ] "+s;}); }
+function dot(id){ return linesOf(id).map(function(s){return "・"+s;}); }
+// Markdown用：チェックリスト項目 / 箇条書き項目
+function chkMd(id){ return linesOf(id).map(function(s){return "- [ ] "+s;}); }
+function dotMd(id){ return linesOf(id).map(function(s){return "- "+s;}); }
+
+// Markdown版セクション：見出し＋小見出し＋本文
+function memoSectionMd(title, pairs){
+  var has=pairs.some(function(p){return p[1] && p[1].length;});
+  if(!has) return "";
+  var s=["## "+title, ""];
+  pairs.forEach(function(p){
+    if(!(p[1] && p[1].length)) return;
+    if(p[0]) s.push("### "+p[0]);
+    s.push(p[1].join("\n"));
+    s.push("");
+  });
+  return s.join("\n").replace(/\n+$/,"")+"\n";
+}
+
+function buildMemo(){
+  currentTab="memo";
+  var ttOn=document.getElementById("m_tt_on").checked;
+  var wkOn=document.getElementById("m_wk_on").checked;
+  var moOn=document.getElementById("m_mo_on").checked;
+
+  /* ===== プレーンテキスト版（罫線レイアウト） ===== */
+  var o=[];
+  o.push(BAR); o.push("📝 日報・進捗・チェックリスト"); o.push(BAR);
+  o.push("日付  : "+v("m_date"));
+  o.push("役割  : "+v("m_role"));
+  o.push("気分  : "+v("m_mood"));
+  o.push("一言  : 「"+v("m_word")+"」");
+  o.push("");
+
+  if(ttOn){
+    o.push(BAR2); o.push("🕘 タイムテーブル"); o.push(BAR2);
+    var tt=linesOf("m_tt");
+    if(tt.length){ o.push(tt.join("\n")); }
+    else {
+      o.push("09:00-10:00 │");o.push("10:00-11:00 │");o.push("11:00-12:00 │");
+      o.push("12:00-13:00 │ 🍱 昼休憩");o.push("13:00-14:00 │");o.push("14:00-15:00 │");
+      o.push("15:00-15:10 │ ☕ 10分：社内記事ドラフト1段落");o.push("15:10-16:00 │");
+      o.push("16:00-17:00 │");o.push("17:00-18:00 │");o.push("18:00       │ 🏁 定時退社チェック");
+    }
+    o.push("");
+  }
+
+  var todo=memoSection("✅ 今日すること", [
+    ["メイン業務", chk("m_today_main")],
+    ["メイン業務以外（学習・整備・社内貢献）", chk("m_today_sub")],
+    ["趣味枠（個人開発・記事・インプット）", chk("m_today_hobby")],
+    ["今日 口頭・チャットで相談すること", chk("m_today_talk")]
+  ]);
+  if(todo) o.push(todo);
+
+  var prog=[BAR2,"📊 作業進捗",BAR2];
+  var done=dot("m_done"), wip=dot("m_wip");
+  var hasProg=false;
+  if(done.length){ prog.push("▼ ✓ 完了したこと"); prog.push(done.join("\n")); prog.push(""); hasProg=true; }
+  if(wip.length){ prog.push("▼ → 着手中・持ち越し"); prog.push(wip.join("\n")); prog.push(""); hasProg=true; }
+  if(v("m_bl_what")){
+    hasProg=true;
+    prog.push("▼ ⚠ ブロッカー / 詰まり");
+    prog.push("・内容："+v("m_bl_what"));
+    prog.push("影響："+v("m_bl_eff"));
+    prog.push("必要なアクション："+v("m_bl_act"));
+    prog.push("相手："+v("m_bl_who"));
+    prog.push("");
+  }
+  if(hasProg) o.push(prog.join("\n").replace(/\n+$/,"")+"\n");
+
+  var req=memoSection("🚩 依頼・相談 一覧", [
+    ["📨 サポート依頼（手を貸してほしい）", chk("m_req_sup")],
+    ["🔍 レビュー依頼（成果物を見てほしい）", chk("m_req_rev")],
+    ["👥 他の人と相談が必要", chk("m_req_talk")],
+    ["💭 その他・気になっていること", dot("m_req_etc")]
+  ]);
+  if(req) o.push(req);
+
+  var tmr=memoSection("📅 明日すること", [
+    ["メイン業務", chk("m_tm_main")],
+    ["メイン業務以外", chk("m_tm_sub")],
+    ["趣味枠", chk("m_tm_hobby")],
+    ["明日 口頭・チャットで相談すること", chk("m_tm_talk")]
+  ]);
+  if(tmr) o.push(tmr);
+
+  if(wkOn){
+    var wk=memoSection("🗓 今週すること（残り）", [
+      ["メイン業務", chk("m_wk_main")],["メイン業務以外・趣味", chk("m_wk_sub")]
+    ]);
+    if(wk) o.push(wk);
+    var nw=memoSection("🗓 来週すること", [
+      ["メイン業務", chk("m_nw_main")],["メイン業務以外・趣味", chk("m_nw_sub")]
+    ]);
+    if(nw) o.push(nw);
+  }
+  if(moOn){
+    var mo=memoSection("📆 今月すること", [
+      ["メイン業務（月次目標）", chk("m_mo_main")],["メイン業務以外・趣味", chk("m_mo_sub")]
+    ]);
+    if(mo) o.push(mo);
+    var nm=memoSection("📆 来月すること", [["メイン業務", chk("m_nm_main")]]);
+    if(nm) o.push(nm);
+  }
+
+  var habitsAll=[].slice.call(document.querySelectorAll("#m_habits input")).map(function(c){return (c.checked?"[x] ":"[ ] ")+c.value;});
+  o.push(BAR); o.push("🩺 デイリー習慣（毎日チェック）"); o.push(BAR);
+  o.push(habitsAll.join("\n")); o.push("");
+
+  var selfAll=[].slice.call(document.querySelectorAll("#m_self input")).map(function(c){return (c.checked?"[x] ":"[ ] ")+c.value;});
+  o.push(BAR); o.push("🧠 退社前 1分セルフチェック"); o.push(BAR);
+  o.push(selfAll.join("\n"));
+
+  var txt=o.join("\n");
+
+  /* ===== Markdown版（見出し・チェックボックス） ===== */
+  var m=[];
+  m.push("# 📝 日報・進捗・チェックリスト");
+  m.push("");
+  m.push("| 項目 | 内容 |");
+  m.push("|---|---|");
+  m.push("| 日付 | "+v("m_date")+" |");
+  m.push("| 役割 | "+v("m_role")+" |");
+  m.push("| 気分 | "+v("m_mood")+" |");
+  m.push("| 一言 | 「"+v("m_word")+"」 |");
+  m.push("");
+
+  if(ttOn){
+    m.push("## 🕘 タイムテーブル"); m.push("");
+    var ttm=linesOf("m_tt");
+    m.push("```");
+    if(ttm.length){ m.push(ttm.join("\n")); }
+    else {
+      m.push("09:00-10:00 │");m.push("10:00-11:00 │");m.push("11:00-12:00 │");
+      m.push("12:00-13:00 │ 🍱 昼休憩");m.push("13:00-14:00 │");m.push("14:00-15:00 │");
+      m.push("15:00-15:10 │ ☕ 10分：社内記事ドラフト1段落");m.push("15:10-16:00 │");
+      m.push("16:00-17:00 │");m.push("17:00-18:00 │");m.push("18:00       │ 🏁 定時退社チェック");
+    }
+    m.push("```"); m.push("");
+  }
+
+  var todoM=memoSectionMd("✅ 今日すること", [
+    ["メイン業務", chkMd("m_today_main")],
+    ["メイン業務以外（学習・整備・社内貢献）", chkMd("m_today_sub")],
+    ["趣味枠（個人開発・記事・インプット）", chkMd("m_today_hobby")],
+    ["今日 口頭・チャットで相談すること", chkMd("m_today_talk")]
+  ]);
+  if(todoM) m.push(todoM);
+
+  var doneM=dotMd("m_done"), wipM=dotMd("m_wip");
+  var progM=["## 📊 作業進捗",""], hasProgM=false;
+  if(doneM.length){ progM.push("### ✓ 完了したこと"); progM.push(doneM.join("\n")); progM.push(""); hasProgM=true; }
+  if(wipM.length){ progM.push("### → 着手中・持ち越し"); progM.push(wipM.join("\n")); progM.push(""); hasProgM=true; }
+  if(v("m_bl_what")){
+    hasProgM=true;
+    progM.push("### ⚠ ブロッカー / 詰まり");
+    progM.push("- **内容**："+v("m_bl_what"));
+    progM.push("- **影響**："+v("m_bl_eff"));
+    progM.push("- **必要なアクション**："+v("m_bl_act"));
+    progM.push("- **相手**："+v("m_bl_who"));
+    progM.push("");
+  }
+  if(hasProgM) m.push(progM.join("\n").replace(/\n+$/,"")+"\n");
+
+  var reqM=memoSectionMd("🚩 依頼・相談 一覧", [
+    ["📨 サポート依頼（手を貸してほしい）", chkMd("m_req_sup")],
+    ["🔍 レビュー依頼（成果物を見てほしい）", chkMd("m_req_rev")],
+    ["👥 他の人と相談が必要", chkMd("m_req_talk")],
+    ["💭 その他・気になっていること", dotMd("m_req_etc")]
+  ]);
+  if(reqM) m.push(reqM);
+
+  var tmrM=memoSectionMd("📅 明日すること", [
+    ["メイン業務", chkMd("m_tm_main")],
+    ["メイン業務以外", chkMd("m_tm_sub")],
+    ["趣味枠", chkMd("m_tm_hobby")],
+    ["明日 口頭・チャットで相談すること", chkMd("m_tm_talk")]
+  ]);
+  if(tmrM) m.push(tmrM);
+
+  if(wkOn){
+    var wkM=memoSectionMd("🗓 今週すること（残り）", [
+      ["メイン業務", chkMd("m_wk_main")],["メイン業務以外・趣味", chkMd("m_wk_sub")]
+    ]);
+    if(wkM) m.push(wkM);
+    var nwM=memoSectionMd("🗓 来週すること", [
+      ["メイン業務", chkMd("m_nw_main")],["メイン業務以外・趣味", chkMd("m_nw_sub")]
+    ]);
+    if(nwM) m.push(nwM);
+  }
+  if(moOn){
+    var moM=memoSectionMd("📆 今月すること", [
+      ["メイン業務（月次目標）", chkMd("m_mo_main")],["メイン業務以外・趣味", chkMd("m_mo_sub")]
+    ]);
+    if(moM) m.push(moM);
+    var nmM=memoSectionMd("📆 来月すること", [["メイン業務", chkMd("m_nm_main")]]);
+    if(nmM) m.push(nmM);
+  }
+
+  var habitsMd=[].slice.call(document.querySelectorAll("#m_habits input")).map(function(c){return (c.checked?"- [x] ":"- [ ] ")+c.value;});
+  m.push("## 🩺 デイリー習慣（毎日チェック）"); m.push("");
+  m.push(habitsMd.join("\n")); m.push("");
+
+  var selfMd=[].slice.call(document.querySelectorAll("#m_self input")).map(function(c){return (c.checked?"- [x] ":"- [ ] ")+c.value;});
+  m.push("## 🧠 退社前 1分セルフチェック"); m.push("");
+  m.push(selfMd.join("\n"));
+
+  var md=m.join("\n");
+
+  setOut(txt, md);
+}
+
+/* ---- TAB3 build: 相談チャット ---- */
+function switchTpl(){
+  var t=document.getElementById("c_tpl").value;
+  document.querySelectorAll(".tpl").forEach(function(d){
+    d.style.display = (d.dataset.tpl===t) ? "block" : "none";
+  });
+}
+
+/* 進捗報告（I）：タスク行 */
+function ciAddTask(data){
+  data=data||{name:"",status:"🟢 順調",pct:"",note:""};
+  var wrap=document.getElementById("cI_taskList");
+  var row=document.createElement("div"); row.className="ci-row";
+  var name=document.createElement("input"); name.className="ci-name"; name.placeholder="タスク名"; name.value=data.name;
+  var st=document.createElement("select"); st.className="ci-status";
+  ["🟢 順調","🟡 やや遅延","🔴 要対応","✅ 完了","⏸ 未着手"].forEach(function(s){var o=document.createElement("option");o.textContent=s;st.appendChild(o);});
+  st.value=data.status;
+  var pct=document.createElement("input"); pct.className="ci-pct"; pct.placeholder="%"; pct.inputMode="numeric"; pct.value=data.pct;
+  var note=document.createElement("input"); note.className="ci-note"; note.placeholder="補足（任意）"; note.value=data.note;
+  var del=document.createElement("button"); del.type="button"; del.className="del"; del.textContent="×";
+  del.onclick=function(){ row.remove(); };
+  // 完了を選んだら%を100に補完
+  st.addEventListener("change", function(){ if(st.value==="✅ 完了" && !pct.value) pct.value="100"; if(st.value==="⏸ 未着手" && !pct.value) pct.value="0"; });
+  row.appendChild(name); row.appendChild(st); row.appendChild(pct); row.appendChild(note); row.appendChild(del);
+  wrap.appendChild(row);
+}
+function ciReadTasks(){
+  return [].slice.call(document.querySelectorAll("#cI_taskList .ci-row")).map(function(r){
+    return {
+      name:r.querySelector(".ci-name").value.trim(),
+      status:r.querySelector(".ci-status").value,
+      pct:r.querySelector(".ci-pct").value.trim(),
+      note:r.querySelector(".ci-note").value.trim()
+    };
+  }).filter(function(t){return t.name;});
+}
+// 進捗報告の本文を長さ別に組み立て
+function buildProgress(){
+  var len=v("cI_len")||"prep";
+  var topic=v("cI_topic")||"（案件名）";
+  var status=v("cI_status");
+  var tasks=ciReadTasks();
+  // 全体％：未入力ならタスク％の平均で補完
+  var pct=v("cI_pct");
+  if(!pct && tasks.length){
+    var nums=tasks.map(function(t){return parseInt(t.pct,10);}).filter(function(n){return !isNaN(n);});
+    if(nums.length){ pct=String(Math.round(nums.reduce(function(a,b){return a+b;},0)/nums.length)); }
+  }
+  var pctTxt = pct? (pct+"%") : "";
+  var due=v("cI_due");
+  var nexts=lines(v("cI_next"));
+  var risk=v("cI_risk");
+  var head = topic + "：" + status + (pctTxt?(" "+pctTxt):"") + (due?("（期限 "+due+"）"):"");
+
+  var o=[];
+  if(len==="1"){
+    // 1分：1行結論＋次アクション1つ
+    o.push("【進捗1分】"+head);
+    if(nexts.length) o.push("次："+nexts[0]);
+    if(risk) o.push("⚠ "+risk);
+  } else if(len==="3"){
+    // 3分：結論＋主要タスク数件＋次アクション
+    o.push("【進捗3分】"+head); o.push("");
+    if(tasks.length){
+      o.push("■タスク");
+      tasks.forEach(function(t){ o.push("・"+t.status+" "+t.name+(t.pct?(" "+t.pct+"%"):"")+(t.note?("（"+t.note+"）"):"")); });
+      o.push("");
+    }
+    if(nexts.length){ o.push("■次のアクション"); nexts.forEach(function(x){o.push("・"+x);}); o.push(""); }
+    if(risk){ o.push("■リスク・相談"); o.push("・"+risk); }
+  } else if(len==="5"){
+    // 5分：見出し付きでフル
+    o.push("【進捗報告】"+topic); o.push("");
+    o.push("■全体ステータス："+status+(pctTxt?(" / "+pctTxt):"")+(due?(" / 期限 "+due):"")); o.push("");
+    if(tasks.length){
+      o.push("■タスク別の状況");
+      tasks.forEach(function(t){ o.push("・"+t.status+" "+t.name+(t.pct?(" "+t.pct+"%"):"")+(t.note?("：" +t.note):"")); });
+      o.push("");
+    }
+    if(nexts.length){ o.push("■次のアクション"); nexts.forEach(function(x){o.push("・"+x);}); o.push(""); }
+    if(risk){ o.push("■リスク・困りごと"); o.push("・"+risk); o.push(""); }
+    o.push("以上、ご確認よろしくお願いします。");
+  } else {
+    // PREP：結論→理由→具体例→結論
+    o.push("【進捗報告（PREP）】"+topic); o.push("");
+    o.push("◆結論（Point）");
+    o.push(status+(pctTxt?("、現在 "+pctTxt):"")+"です。"+(due?("期限は "+due+"。"):"")); o.push("");
+    o.push("◆理由（Reason）");
+    if(risk){ o.push(risk); } else { o.push("予定どおりタスクを消化できているためです。"); } o.push("");
+    o.push("◆具体例（Example）");
+    if(tasks.length){ tasks.forEach(function(t){ o.push("・"+t.status+" "+t.name+(t.pct?(" "+t.pct+"%"):"")+(t.note?("（"+t.note+"）"):"")); }); }
+    else { o.push("（タスク未入力）"); } o.push("");
+    o.push("◆まとめ（Point）");
+    o.push("引き続き"+(nexts.length?("「"+nexts[0]+"」"):"次のアクション")+"を進めます。"+(nexts.length>1?("ほか："+nexts.slice(1).join("、")):""));
+  }
+  var txt=o.join("\n");
+
+  // Markdown版
+  var m=[];
+  var title = (len==="prep") ? "進捗報告（PREP）" : (len==="1"?"進捗（1分）":(len==="3"?"進捗（3分）":(len==="5"?"進捗報告（5分）":"進捗報告")));
+  m.push("### "+title+"："+topic);
+  m.push("");
+  m.push("- **ステータス**："+status+(pctTxt?(" / "+pctTxt):"")+(due?(" / 期限 "+due):""));
+  if(tasks.length){
+    m.push("");
+    m.push("| タスク | 状態 | 進捗 | 補足 |");
+    m.push("|---|---|---:|---|");
+    tasks.forEach(function(t){ m.push("| "+t.name+" | "+t.status+" | "+(t.pct?t.pct+"%":"")+" | "+(t.note||"")+" |"); });
+  }
+  if(nexts.length){ m.push(""); m.push("**次のアクション**"); nexts.forEach(function(x){m.push("- "+x);}); }
+  if(risk){ m.push(""); m.push("**リスク・相談**：" + risk); }
+  var md=m.join("\n");
+
+  return {txt:txt, md:md};
+}
+
+function buildChat(){
+  currentTab="chat";
+  var t=document.getElementById("c_tpl").value, o=[];
+  if(t==="A"){
+    o.push("お疲れ様です。");
+    o.push("ご相談です（5分ほどお時間いただけますか／チャットでも結構です）。");
+    o.push("");
+    o.push("▼ 状況"); o.push("・"+v("cA_sit")); o.push("");
+    o.push("▼ 検討した選択肢"); o.push("・A："+v("cA_a")); o.push("・B："+v("cA_b")); o.push("");
+    o.push("▼ 私の推し案"); o.push("・"+v("cA_push")); o.push("");
+    o.push("▼ ほしい判断"); o.push("・"+v("cA_want"));
+  } else if(t==="B"){
+    o.push("お疲れ様です、"+v("cB_name")+"です。");
+    o.push(v("cB_topic")+"について教えてください。");
+    o.push("");
+    o.push("▼ 何が分からないか"); o.push("・"+v("cB_q")); o.push("");
+    o.push("▼ 自分で確認したこと"); o.push("・"+v("cB_done")); o.push("");
+    o.push("▼ いつまでに方針が欲しいか"); o.push("・"+v("cB_due")+"（業務影響："+v("cB_eff")+"）");
+  } else if(t==="C"){
+    o.push("レビューお願いします🙏"); o.push("");
+    o.push("▼ 対象"); o.push("・URL："+v("cC_url")); o.push("");
+    o.push("▼ 見てほしい観点"); o.push("・1）"+v("cC_p1")); o.push("・2）"+v("cC_p2")); o.push("");
+    o.push("▼ 期限"); o.push("・"+v("cC_due")); o.push("");
+    o.push("▼ 補足"); o.push("・"+v("cC_note"));
+  } else if(t==="D"){
+    o.push("【至急共有】"+(v("cD_fact")?"":"")+"事象が発生しました。"); o.push("");
+    o.push("▼ 事実"); o.push("・"+v("cD_fact")); o.push("");
+    o.push("▼ 影響範囲"); o.push("・"+v("cD_eff")); o.push("");
+    o.push("▼ 現在の対応"); o.push("・"+v("cD_act")); o.push("");
+    o.push("▼ 判断ほしい点"); o.push("・"+v("cD_want"));
+  } else if(t==="E"){
+    o.push("連絡共有です（返信不要）。"); o.push("");
+    o.push("・"+v("cE_what"));
+    o.push("・関連URL："+v("cE_url"));
+    o.push("・影響："+v("cE_eff"));
+  } else if(t==="F"){
+    o.push("お疲れ様です。");
+    o.push("下記の件で △△さん・□□さん にも入っていただけませんか。"); o.push("");
+    o.push("▼ 議題"); o.push("・"+v("cF_topic")); o.push("");
+    o.push("▼ なぜその二人が必要か"); o.push("・△△さん："+v("cF_p1")); o.push("・□□さん："+v("cF_p2")); o.push("");
+    o.push("▼ 形式"); o.push("・"+v("cF_form")); o.push("");
+    o.push("▼ いつ頃"); o.push("・"+v("cF_when"));
+  } else if(t==="G"){
+    o.push("*【日報】"+v("cG_date")+"*");
+    o.push("昨日："+v("cG_y"));
+    o.push("今日："+v("cG_t"));
+    o.push("ブロッカー："+(v("cG_block")||"なし"));
+    o.push("相談："+v("cG_consult"));
+  } else if(t==="H"){
+    o.push("本日はお時間いただきありがとうございました。"); o.push("");
+    o.push("▼ 本日の合意事項");
+    var ag=linesOf("cH_agree"); (ag.length?ag:[""]).forEach(function(s){o.push("・"+s);}); o.push("");
+    o.push("▼ 次回までのアクション"); o.push("・弊社："+v("cH_us")); o.push("・貴社："+v("cH_you")); o.push("");
+    o.push("▼ 次回予定"); o.push("・"+v("cH_next")+(v("cH_cand")?("（候補："+v("cH_cand")+"）"):"")); o.push("");
+    o.push("引き続きどうぞよろしくお願いいたします。");
+  } else if(t==="I"){
+    var pr=buildProgress();
+    setOut(pr.txt, pr.md);
+    return;
+  }
+  setOut(o.join("\n"));
+}
+
+/* ---- TAB4: 時間割（HR学校風） ---- */
+// 既定の学校風時間割（08:00〜18:00）。kind: lesson(授業)/meeting(会議)/work(作業)/break(休憩)
+var TT_DEFAULT = [
+  {label:"朝のHR", s:"08:00", e:"08:30", kind:"meeting"},
+  {label:"1限",   s:"08:30", e:"09:20", kind:"lesson"},
+  {label:"2限",   s:"09:30", e:"10:20", kind:"lesson"},
+  {label:"3限",   s:"10:30", e:"11:20", kind:"lesson"},
+  {label:"4限",   s:"11:30", e:"12:20", kind:"lesson"},
+  {label:"昼休み", s:"12:20", e:"13:10", kind:"break"},
+  {label:"5限",   s:"13:10", e:"14:00", kind:"lesson"},
+  {label:"6限",   s:"14:10", e:"15:00", kind:"work"},
+  {label:"小休止", s:"15:00", e:"15:10", kind:"break"},
+  {label:"7限",   s:"15:10", e:"16:00", kind:"work"},
+  {label:"8限",   s:"16:10", e:"17:00", kind:"work"},
+  {label:"帰りのHR",s:"17:00", e:"18:00", kind:"meeting"}
+];
+var KIND_LABEL = {lesson:"授業", meeting:"会議", work:"作業", break:"休憩"};
+
+function toMin(t){
+  var m=/^(\d{1,2}):(\d{2})$/.exec((t||"").trim());
+  if(!m) return null;
+  return parseInt(m[1],10)*60+parseInt(m[2],10);
+}
+// ===== 丸め設定（画面で選択） =====
+var ROUND_UNIT = 15;        // 15 / 30 / 60（分）
+var ROUND_MODE = "round";   // "round"=四捨五入 / "ceil"=切り上げ
+function applyRound(min){
+  if(min==null) return null;
+  var u=ROUND_UNIT||15;
+  return (ROUND_MODE==="ceil" ? Math.ceil(min/u) : Math.round(min/u)) * u;
+}
+// 後方互換：旧名 round15 は現在の設定で丸める
+function round15(min){ return applyRound(min); }
+function unitLabel(){ return ROUND_UNIT===60 ? "1時間単位" : (ROUND_UNIT+"分単位"); }
+function modeLabel(){ return ROUND_MODE==="ceil" ? "切り上げ" : "四捨五入"; }
+// 丸め設定の変更を反映して再計算
+function onRoundChange(){
+  var u=document.getElementById("round_unit"), m=document.getElementById("round_mode");
+  if(u) ROUND_UNIT=parseInt(u.value,10)||15;
+  if(m) ROUND_MODE=(m.value==="ceil"?"ceil":"round");
+  recalcTT();
+}
+
+function fmtHM(min){
+  if(min<=0) return "0:00";
+  var h=Math.floor(min/60), m=min%60;
+  return h+":"+(m<10?"0":"")+m;
+}
+// 単位コマ表記（例：1:30（90分／6コマ）。コマ＝現在の丸め単位）
+function fmt15(min){
+  var u=ROUND_UNIT||15;
+  var q=Math.round(min/u);
+  return fmtHM(min)+"（"+min+"分／"+q+"コマ）";
+}
+
+function addPeriod(data, insertAfterRow){
+  data = data || {label:"", s:"", e:"", kind:"work"};
+  if(typeof data.brk==="boolean" && !data.kind){ data.kind = data.brk ? "break" : "work"; } // 後方互換
+  var kind = data.kind || "work";
+  var isBreak = (kind==="break");
+  var isInsert = !!data.isInsert; // 差し込み（割込）コマか
+  var row=document.createElement("div");
+  row.className="tt-row kind-"+kind+(isBreak?" brk":"")+(isInsert?" insert":"");
+
+  var lab=document.createElement("input"); lab.className="tt-label"; lab.placeholder="時限"; lab.value=data.label;
+
+  var kindSel=document.createElement("select"); kindSel.className="tt-kind";
+  [["lesson","授業"],["meeting","会議"],["work","作業"],["break","休憩"],["other","その他"]].forEach(function(p){
+    var o=document.createElement("option"); o.value=p[0]; o.textContent=p[1]; kindSel.appendChild(o);
+  });
+  kindSel.value=kind;
+  // その他用カスタムラベル（kind==="other"のとき表示）
+  var custom=document.createElement("input"); custom.className="tt-custom"; custom.placeholder="区分名";
+  custom.value=data.customLabel||"";
+  custom.style.display = (kind==="other") ? "block" : "none";
+  custom.addEventListener("input", recalcTT);
+
+  var st=document.createElement("input"); st.className="tt-start"; st.placeholder="08:00"; st.value=data.s;
+  var en=document.createElement("input"); en.className="tt-end"; en.placeholder="08:50"; en.value=data.e;
+  var plan=document.createElement("input"); plan.className="tt-plan"; plan.placeholder="予定（やること）";
+  var act=document.createElement("input"); act.className="tt-actual"; act.placeholder="実績（やったこと）";
+  if(data.plan) plan.value=data.plan;
+  if(data.actual) act.value=data.actual;
+  // タグ挿入先として、最後にフォーカスした欄を記憶
+  [plan,act].forEach(function(el){ el.addEventListener("focus", function(){ window.__lastTagTarget=el; }); });
+  var stat=document.createElement("select"); stat.className="tt-status";
+  ["◎","○","△","—"].forEach(function(s){var o=document.createElement("option");o.textContent=s;stat.appendChild(o);});
+  stat.value = data.status || (isBreak ? "—" : "◎");
+  // 差込フラグ（チェックボックス）
+  var insWrap=document.createElement("label"); insWrap.className="tt-ins"; insWrap.title="差し込み（割込）対応のコマ";
+  var insChk=document.createElement("input"); insChk.type="checkbox"; insChk.className="tt-insflag"; insChk.checked=isInsert;
+  var insTxt=document.createElement("span"); insTxt.textContent="⚡";
+  insWrap.appendChild(insChk); insWrap.appendChild(insTxt);
+  insChk.addEventListener("change", function(){
+    row.classList.toggle("insert", insChk.checked);
+    recalcTT();
+  });
+  var min=document.createElement("div"); min.className="tt-min"; min.textContent="-";
+  // この行の直後に差込コマを挿入するボタン
+  var insBtn=document.createElement("button"); insBtn.type="button"; insBtn.className="ins-btn"; insBtn.textContent="⤵"; insBtn.title="この下に差し込みコマを追加";
+  insBtn.onclick=function(){ addPeriod({label:"割込", kind:"other", customLabel:"割込", isInsert:true}, row); };
+  var del=document.createElement("button"); del.type="button"; del.className="del"; del.textContent="×";
+  del.onclick=function(){ row.remove(); recalcTT(); };
+
+  // 区分を変えたら行の色クラスを張り替え、休憩なら達成度を—に寄せる
+  kindSel.addEventListener("change", function(){
+    var k=kindSel.value;
+    row.className="tt-row kind-"+k+(k==="break"?" brk":"")+(insChk.checked?" insert":"");
+    custom.style.display = (k==="other") ? "block" : "none";
+    if(k==="break"){ stat.value="—"; }
+    else if(stat.value==="—"){ stat.value="◎"; }
+    recalcTT();
+  });
+
+  [st,en,stat].forEach(function(el){ el.addEventListener("input", recalcTT); el.addEventListener("change", recalcTT); });
+
+  row.appendChild(lab); row.appendChild(kindSel); row.appendChild(custom); row.appendChild(st); row.appendChild(en);
+  row.appendChild(plan); row.appendChild(act); row.appendChild(stat);
+  row.appendChild(insWrap); row.appendChild(min); row.appendChild(insBtn); row.appendChild(del);
+
+  var list=document.getElementById("ttList");
+  if(insertAfterRow && insertAfterRow.parentNode===list){
+    list.insertBefore(row, insertAfterRow.nextSibling); // 指定行の直後に挿入
+  } else {
+    list.appendChild(row);
+  }
+  recalcTT();
+  return row;
+}
+
+function readPeriods(){
+  return [].slice.call(document.querySelectorAll("#ttList .tt-row")).map(function(r){
+    var s=r.querySelector(".tt-start").value, e=r.querySelector(".tt-end").value;
+    var sm=toMin(s), em=toMin(e);
+    var raw=(sm!=null && em!=null && em>sm) ? (em-sm) : 0;
+    var dur=round15(raw); // 15分単位に丸める
+    var status=r.querySelector(".tt-status").value;
+    var kind=r.querySelector(".tt-kind").value;
+    var customEl=r.querySelector(".tt-custom");
+    var customLabel=customEl ? customEl.value.trim() : "";
+    var kindLabel = (kind==="other") ? (customLabel||"その他") : (KIND_LABEL[kind]||"作業");
+    var insEl=r.querySelector(".tt-insflag");
+    return {
+      label:r.querySelector(".tt-label").value.trim(),
+      kind:kind, kindLabel:kindLabel, customLabel:customLabel,
+      s:s.trim(), e:e.trim(), dur:dur,
+      plan:r.querySelector(".tt-plan").value.trim(),
+      actual:r.querySelector(".tt-actual").value.trim(),
+      status:status,
+      isBreak:(kind==="break"),
+      isInsert:!!(insEl&&insEl.checked)
+    };
+  });
+}
+
+// ===== よく使うタグ（ワンタップ挿入） =====
+var QTAG_KEY="usausa_quicktags_v1";
+var QTAG_DEFAULT=["資料作成","会議","レビュー","メール","質問対応","学習","休憩"];
+function loadQuickTags(){
+  if(!lsAvailable()) return (window.__memQTags||QTAG_DEFAULT.slice());
+  try{ var s=window.localStorage.getItem(QTAG_KEY); return s?JSON.parse(s):QTAG_DEFAULT.slice(); }catch(e){ return QTAG_DEFAULT.slice(); }
+}
+function storeQuickTags(arr){
+  if(lsAvailable()){ try{ window.localStorage.setItem(QTAG_KEY, JSON.stringify(arr)); }catch(e){} }
+  window.__memQTags=arr;
+}
+function renderQuickTags(){
+  var wrap=document.getElementById("tagButtons"); if(!wrap) return;
+  var tags=loadQuickTags();
+  wrap.innerHTML="";
+  if(!tags.length){ wrap.innerHTML='<span class="hint" style="margin:0;">タグ未登録。下の欄から追加できます。</span>'; return; }
+  tags.forEach(function(t){
+    var b=document.createElement("span"); b.className="tag-btn";
+    var lbl=document.createElement("span"); lbl.textContent="#"+t;
+    lbl.onclick=function(){ insertTag(t); };
+    var x=document.createElement("span"); x.className="x"; x.textContent="×"; x.title="このタグを一覧から削除";
+    x.onclick=function(ev){ ev.stopPropagation(); removeQuickTag(t); };
+    b.appendChild(lbl); b.appendChild(x);
+    wrap.appendChild(b);
+  });
+}
+function addQuickTag(){
+  var inp=document.getElementById("newTag"); if(!inp) return;
+  var t=(inp.value||"").trim().replace(/^[#＃]/,"");
+  if(!t){ return; }
+  var tags=loadQuickTags();
+  if(tags.indexOf(t)<0){ tags.push(t); storeQuickTags(tags); renderQuickTags(); }
+  inp.value=""; inp.focus();
+}
+function removeQuickTag(t){
+  var tags=loadQuickTags().filter(function(x){return x!==t;});
+  storeQuickTags(tags); renderQuickTags();
+}
+// 最後にフォーカスした予定/実績欄にタグを挿入（無ければ最初の予定欄）
+function insertTag(t){
+  var el=window.__lastTagTarget;
+  if(!el || !document.body.contains(el)){
+    el=document.querySelector("#ttList .tt-plan");
+  }
+  if(!el){ toast("挿入先の欄がありません"); return; }
+  var tag="#"+t;
+  var cur=el.value||"";
+  el.value = cur ? (cur.replace(/\s+$/,"")+" "+tag+" ") : (tag+" ");
+  el.focus();
+  window.__lastTagTarget=el;
+  recalcTT();
+}
+
+// 予定/実績テキストから #タグ を抽出（#のあと空白・全角空白・改行・カンマ・読点まで）
+function extractTags(text){
+  if(!text) return [];
+  var out=[], re=/[#＃]([^\s,、，\/／]+)/g, m;
+  while((m=re.exec(text))!==null){ if(m[1]) out.push(m[1]); }
+  return out;
+}
+// コマ配列から、タグごとの予定時間（分）を積み上げる。タグはplan+actual両方から拾い重複排除
+function tagMinutesFromPeriods(periods){
+  var tagMin={};
+  (periods||[]).forEach(function(p){
+    if(p.kind==="break"||p.isBreak) return;
+    var dur=p.dur||0; if(!dur) return;
+    var tags=extractTags((p.plan||"")+" "+(p.actual||""));
+    // 同一コマ内の重複タグは1回に
+    var uniqT={}; tags.forEach(function(t){ uniqT[t]=1; });
+    Object.keys(uniqT).forEach(function(t){ tagMin[t]=(tagMin[t]||0)+dur; });
+  });
+  return tagMin;
+}
+
+// 達成率に応じた励ましコメント（うさうさ先生）
+function cheerFor(rate, slots){
+  if(slots<=0) return {lv:"ok", emoji:"📝", title:"まずは時間割を組もう", msg:"コマに達成度を入れると、ここに先生からの一言が出ます🐰"};
+  if(rate>=90) return {lv:"hanamaru", emoji:"🌸", title:"花丸！よくがんばりました", msg:"今日の予定をほぼやり切りました。この調子を覚えておいて、明日の自分に渡してあげましょう。"};
+  if(rate>=75) return {lv:"great", emoji:"🌟", title:"とても良い一日", msg:"大事なところはしっかり押さえられました。残せた分は明日のTryに回せばOKです。"};
+  if(rate>=50) return {lv:"good", emoji:"💪", title:"半分以上やれた、上出来", msg:"ペースは悪くありません。終わらなかったコマは「なぜ」を一つだけメモすると次に活きます。"};
+  if(rate>=25) return {lv:"ok", emoji:"🌱", title:"進んだ事実を認めよう", msg:"思うように進まなくても、ゼロではありません。明日は難所を午前のコマに置いてみましょう。"};
+  return {lv:"ok", emoji:"☕", title:"おつかれさま。今日はここまで", msg:"うまくいかない日もあります。Tryに小さな一歩を1つだけ書いて、もう店じまいにしましょう🐰"};
+}
+function renderCheer(rate, slots){
+  var c=cheerFor(rate, slots);
+  var card=document.getElementById("cheerCard");
+  card.className="cheer-card show lv-"+c.lv;
+  document.getElementById("cheerEmoji").textContent=c.emoji;
+  document.getElementById("cheerTitle").textContent=c.emoji+" "+c.title+"（達成率 "+rate+"%）";
+  document.getElementById("cheerMsg").textContent=c.msg;
+  return c;
+}
+
+function recalcTT(){
+  var rows=readPeriods();
+  var domRows=document.querySelectorAll("#ttList .tt-row");
+  var slots=0, planMin=0, actMin=0, cO=0,cMaru=0,cTri=0,cBrk=0;
+  var kindMin={lesson:0,meeting:0,work:0}; // 固定区分の予定稼働時間
+  var customMin={}; // カスタム区分名ごとの予定稼働時間
+  var insCount=0, insMin=0; // 差し込み（割込）コマ数・時間
+  rows.forEach(function(r,i){
+    var dur=r.dur;
+    if(domRows[i]) domRows[i].querySelector(".tt-min").textContent = dur? dur+"分" : "-";
+    if(r.kind==="break"){ cBrk++; return; }
+    slots++; planMin+=dur;
+    if(r.isInsert){ insCount++; insMin+=dur; }
+    if(r.kind==="other"){ var nm=r.kindLabel||"その他"; customMin[nm]=(customMin[nm]||0)+dur; }
+    else if(kindMin[r.kind]!=null){ kindMin[r.kind]+=dur; }
+    if(r.status==="◎"){ cO++; actMin+=dur; }
+    else if(r.status==="○"){ cMaru++; actMin+=dur*0.5; }
+    else if(r.status==="△"){ cTri++; }
+  });
+  var rate = planMin>0 ? Math.round(actMin/planMin*100) : 0;
+  document.getElementById("c_slots").textContent=slots;
+  document.getElementById("c_plan").textContent=fmtHM(planMin);
+  document.getElementById("c_actual").textContent=fmtHM(Math.round(actMin));
+  document.getElementById("c_rate").textContent=rate+"%";
+  document.getElementById("c_barfill").style.width=Math.min(rate,100)+"%";
+  document.getElementById("c_breakdown").textContent="◎"+cO+" ／ ○"+cMaru+" ／ △"+cTri+" ／ 休憩"+cBrk+(insCount?(" ／ ⚡差込"+insCount):"");
+
+  // 区分別 内訳バー
+  var kb=document.getElementById("c_kindbar");
+  if(kb){
+    kb.innerHTML="";
+    [["lesson","kb-lesson"],["meeting","kb-meeting"],["work","kb-work"]].forEach(function(p){
+      var w=planMin>0 ? (kindMin[p[0]]/planMin*100) : 0;
+      if(w>0){ var sp=document.createElement("span"); sp.className=p[1]; sp.style.width=w+"%"; kb.appendChild(sp); }
+    });
+    var custTxt=Object.keys(customMin).map(function(k){return k+" "+fmtHM(customMin[k]);}).join(" ／ ");
+    document.getElementById("c_kindlabel").textContent=
+      "区分別 予定時間（"+unitLabel()+"／"+modeLabel()+"）：授業 "+fmtHM(kindMin.lesson)+" ／ 会議 "+fmtHM(kindMin.meeting)+" ／ 作業 "+fmtHM(kindMin.work)+(custTxt?(" ／ "+custTxt):"");
+  }
+
+  // タグ別 時間集計（#タグ）
+  var tagMin=tagMinutesFromPeriods(rows);
+  var tagKeys=Object.keys(tagMin).sort(function(a,b){return tagMin[b]-tagMin[a];});
+  var tl=document.getElementById("c_taglabel");
+  if(tl){
+    var parts=[];
+    if(tagKeys.length){ parts.push("タグ別 時間：" + tagKeys.map(function(k){return "#"+k+" "+fmtHM(tagMin[k]);}).join(" ／ ")); }
+    if(insCount){ parts.push("⚡差し込み対応："+insCount+"件・"+fmtHM(insMin)); }
+    if(parts.length){ tl.style.display="block"; tl.textContent=parts.join("　|　"); }
+    else { tl.style.display="none"; }
+  }
+
+  renderCheer(rate, slots);
+
+  return {slots:slots,planMin:planMin,actMin:Math.round(actMin),rate:rate,
+    cO:cO,cMaru:cMaru,cTri:cTri,cBrk:cBrk,kindMin:kindMin,customMin:customMin,tagMin:tagMin,
+    insCount:insCount,insMin:insMin};
+}
+
+function buildTimetable(){
+  currentTab="timetable";
+  var rows=readPeriods();
+  var sum=recalcTT();
+
+  /* ===== テキスト版 ===== */
+  var o=[];
+  o.push(BAR); o.push("🏫 今日の時間割・HR（"+v("tt_date")+"）"); o.push(BAR);
+  o.push("天気（気分）："+v("tt_mood"));
+  o.push("出席（勤務地）："+v("tt_place"));
+  o.push("今日のめあて："+v("tt_goal"));
+  o.push("一言：「"+v("tt_word")+"」");
+  o.push("");
+  o.push(BAR2); o.push("🕘 時間割"); o.push(BAR2);
+  rows.forEach(function(r){
+    var time=(r.s&&r.e)?(r.s+"-"+r.e):"";
+    var head=time+" ["+r.kindLabel+"] "+r.label;
+    var body=r.isBreak ? "（休憩）" : (r.status+" 予定："+(r.plan||"-")+" ／ 実績："+(r.actual||"-"));
+    o.push(head.trim()+" │ "+body);
+  });
+  o.push("");
+  o.push(BAR2); o.push("📊 予定 vs 実績"); o.push(BAR2);
+  o.push("稼働コマ："+sum.slots+"コマ");
+  o.push("予定 稼働時間："+fmtHM(sum.planMin));
+  o.push("実績（達成換算）："+fmtHM(sum.actMin));
+  o.push("達成率："+sum.rate+"%");
+  o.push("内訳：◎"+sum.cO+" ／ ○"+sum.cMaru+" ／ △"+sum.cTri+" ／ 休憩"+sum.cBrk);
+  o.push("区分別 予定時間：授業 "+fmtHM(sum.kindMin.lesson)+" ／ 会議 "+fmtHM(sum.kindMin.meeting)+" ／ 作業 "+fmtHM(sum.kindMin.work));
+  o.push("");
+  var cheer=cheerFor(sum.rate, sum.slots);
+  o.push(BAR); o.push("🏁 帰りのHR（振り返り）"); o.push(BAR);
+  o.push(cheer.emoji+" "+cheer.title+"（達成率 "+sum.rate+"%）");
+  o.push(cheer.msg);
+  o.push("");
+  o.push("できたこと(Keep)："+v("tt_keep"));
+  o.push("課題(Problem)："+v("tt_problem"));
+  o.push("明日へ(Try)："+v("tt_try"));
+  o.push("先生から一言："+v("tt_teacher"));
+  var txt=o.join("\n");
+
+  /* ===== Markdown版 ===== */
+  var m=[];
+  m.push("# 🏫 今日の時間割・HR（"+v("tt_date")+"）");
+  m.push("");
+  m.push("- 天気（気分）："+v("tt_mood"));
+  m.push("- 出席（勤務地）："+v("tt_place"));
+  m.push("- **今日のめあて**："+v("tt_goal"));
+  m.push("- 一言：「"+v("tt_word")+"」");
+  m.push("");
+  m.push("## 🕘 時間割");
+  m.push("");
+  m.push("| 時限 | 区分 | 時間 | 予定 | 実績 | 達成 | 予定分 |");
+  m.push("|---|---|---|---|---|:---:|---:|");
+  rows.forEach(function(r){
+    var time=(r.s&&r.e)?(r.s+"–"+r.e):"";
+    if(r.isBreak){
+      m.push("| "+r.label+" | "+r.kindLabel+" | "+time+" | （休憩） | | — | |");
+    } else {
+      m.push("| "+r.label+" | "+r.kindLabel+" | "+time+" | "+(r.plan||"")+" | "+(r.actual||"")+" | "+r.status+" | "+(r.dur?r.dur+"分":"")+" |");
+    }
+  });
+  m.push("");
+  m.push("## 📊 予定 vs 実績");
+  m.push("");
+  m.push("| 指標 | 値 |");
+  m.push("|---|---|");
+  m.push("| 稼働コマ | "+sum.slots+"コマ |");
+  m.push("| 予定 稼働時間 | "+fmtHM(sum.planMin)+" |");
+  m.push("| 実績（達成換算） | "+fmtHM(sum.actMin)+" |");
+  m.push("| 達成率 | "+sum.rate+"% |");
+  m.push("| 内訳 | ◎"+sum.cO+" ／ ○"+sum.cMaru+" ／ △"+sum.cTri+" ／ 休憩"+sum.cBrk+" |");
+  m.push("| 区分別 予定時間 | 授業 "+fmtHM(sum.kindMin.lesson)+" ／ 会議 "+fmtHM(sum.kindMin.meeting)+" ／ 作業 "+fmtHM(sum.kindMin.work)+" |");
+  m.push("");
+  var cheerM=cheerFor(sum.rate, sum.slots);
+  m.push("## 🏁 帰りのHR（振り返り）");
+  m.push("");
+  m.push("> "+cheerM.emoji+" **"+cheerM.title+"（達成率 "+sum.rate+"%）**  ");
+  m.push("> "+cheerM.msg);
+  m.push("");
+  m.push("- **できたこと（Keep）**："+v("tt_keep"));
+  m.push("- **課題（Problem）**："+v("tt_problem"));
+  m.push("- **明日へ（Try）**："+v("tt_try"));
+  m.push("- 先生から一言："+v("tt_teacher"));
+  var md=m.join("\n");
+
+  setOut(txt, md);
+}
+
+/* ============ 30日ログ（保存・Excel入出力・区分集計） ============ */
+var DAYS_KEY = "usausa_tt_days_v1";
+
+// localStorage（ローカル実行時のみ・claude.ai内プレビューでは無効化）
+function lsAvailable(){
+  try{ var k="__t"; window.localStorage.setItem(k,"1"); window.localStorage.removeItem(k); return true; }
+  catch(e){ return false; }
+}
+function loadDays(){
+  if(!lsAvailable()) return (window.__memDays||[]);
+  try{ return JSON.parse(window.localStorage.getItem(DAYS_KEY)||"[]"); }catch(e){ return []; }
+}
+function storeDays(arr){
+  if(lsAvailable()){ try{ window.localStorage.setItem(DAYS_KEY, JSON.stringify(arr)); }catch(e){} }
+  window.__memDays = arr; // フォールバック（メモリ保持）
+}
+
+// 現在の入力から1日分のデータを作る
+function currentDayRecord(){
+  var rows=readPeriods();
+  var sum=recalcTT();
+  return {
+    date: v("tt_date") || "(日付未設定)",
+    mood: v("tt_mood"), place: v("tt_place"),
+    goal: v("tt_goal"), word: v("tt_word"),
+    keep: v("tt_keep"), problem: v("tt_problem"), tryv: v("tt_try"), teacher: v("tt_teacher"),
+    slots: sum.slots, planMin: sum.planMin, actMin: sum.actMin, rate: sum.rate,
+    cO: sum.cO, cMaru: sum.cMaru, cTri: sum.cTri, cBrk: sum.cBrk,
+    kindMin: sum.kindMin,
+    customMin: sum.customMin||{},
+    breakMin: rows.filter(function(r){return r.isBreak;}).reduce(function(a,r){return a+r.dur;},0),
+    periods: rows.map(function(r){
+      return {label:r.label, kind:r.kind, kindLabel:r.kindLabel, customLabel:r.customLabel||"", s:r.s, e:r.e, dur:r.dur,
+        plan:r.plan, actual:r.actual, status:r.status, isInsert:!!r.isInsert};
+    })
+  };
+}
+
+function saveDay(){
+  var rec=currentDayRecord();
+  if(!rec.date || rec.date==="(日付未設定)"){ toast("日付を入れてください"); return; }
+  var days=loadDays();
+  var idx=days.findIndex(function(d){return d.date===rec.date;});
+  if(idx>=0){ days[idx]=rec; } else { days.push(rec); }
+  days.sort(function(a,b){ return a.date<b.date?-1:(a.date>b.date?1:0); });
+  storeDays(days);
+  renderDayList();
+  toast(idx>=0 ? "上書き保存しました" : "保存しました");
+}
+function deleteDay(date){
+  var days=loadDays().filter(function(d){return d.date!==date;});
+  storeDays(days); renderDayList(); toast("削除しました");
+}
+function clearAllDays(){
+  if(!loadDays().length){ toast("保存データはありません"); return; }
+  if(window.confirm && !window.confirm("保存した全ての日を消去します。よろしいですか？")) return;
+  storeDays([]); renderDayList(); toast("全消去しました");
+}
+function loadDayToForm(date){
+  var rec=loadDays().find(function(d){return d.date===date;});
+  if(!rec) return;
+  document.getElementById("tt_date").value=rec.date;
+  if(rec.mood) document.getElementById("tt_mood").value=rec.mood;
+  if(rec.place) document.getElementById("tt_place").value=rec.place;
+  document.getElementById("tt_goal").value=rec.goal||"";
+  document.getElementById("tt_word").value=rec.word||"";
+  document.getElementById("tt_keep").value=rec.keep||"";
+  document.getElementById("tt_problem").value=rec.problem||"";
+  document.getElementById("tt_try").value=rec.tryv||"";
+  document.getElementById("tt_teacher").value=rec.teacher||"";
+  document.getElementById("ttList").innerHTML="";
+  (rec.periods||[]).forEach(function(p){
+    addPeriod({label:p.label, s:p.s, e:p.e, kind:p.kind, customLabel:p.customLabel||"", isInsert:!!p.isInsert});
+  });
+  // 達成度・予定・実績を流し込む
+  var rowsEl=document.querySelectorAll("#ttList .tt-row");
+  (rec.periods||[]).forEach(function(p,i){
+    var r=rowsEl[i]; if(!r) return;
+    r.querySelector(".tt-plan").value=p.plan||"";
+    r.querySelector(".tt-actual").value=p.actual||"";
+    r.querySelector(".tt-status").value=p.status||"◎";
+    var ins=r.querySelector(".tt-insflag"); if(ins){ ins.checked=!!p.isInsert; r.classList.toggle("insert", !!p.isInsert); }
+  });
+  recalcTT();
+  toast(rec.date+" を読み込みました");
+  document.querySelector("#panel-timetable").scrollIntoView&&document.querySelector("#panel-timetable").scrollIntoView({behavior:"smooth"});
+}
+
+function aggregateDays(){
+  var days=loadDays();
+  var agg={lesson:0,meeting:0,work:0,brk:0}, rateSum=0;
+  days.forEach(function(d){
+    agg.lesson += (d.kindMin&&d.kindMin.lesson)||0;
+    agg.meeting+= (d.kindMin&&d.kindMin.meeting)||0;
+    agg.work   += (d.kindMin&&d.kindMin.work)||0;
+    agg.brk    += d.breakMin||0;
+    rateSum += d.rate||0;
+  });
+  return {days:days, count:days.length, agg:agg, avgRate: days.length? Math.round(rateSum/days.length):0};
+}
+
+/* ---- 月末報告書（期間集計＋やったこと/達成/課題/リーダー） ---- */
+// 日付文字列を比較可能なキーに（"2026/05/01" や "2026/5/1（水）" を 20260501 に）
+function dateKey(s){
+  var m=/(\d{4})\D+(\d{1,2})\D+(\d{1,2})/.exec(s||"");
+  if(!m) return null;
+  return parseInt(m[1],10)*10000+parseInt(m[2],10)*100+parseInt(m[3],10);
+}
+function daysInRange(from, to){
+  var fk=dateKey(from), tk=dateKey(to);
+  return loadDays().filter(function(d){
+    var k=dateKey(d.date); if(k==null) return (!fk&&!tk); // 日付不明は無期間時のみ含める
+    if(fk && k<fk) return false;
+    if(tk && k>tk) return false;
+    return true;
+  });
+}
+// 生成結果ボタン用：どのタブからでも月末報告書を生成（時間割タブへ切替）
+function monthlyReportFromOutput(){
+  if(!loadDays().length){ toast("先に時間割タブで日々を保存してください"); return; }
+  var tab=[].slice.call(document.querySelectorAll(".tab")).filter(function(t){return t.dataset.tab==="timetable";})[0];
+  if(tab) tab.click();
+  buildMonthlyReport();
+}
+// 生成結果ボタン用：今日の日報（退勤前報告タブへ切替して生成）
+function reportFromOutput(){
+  var tab=[].slice.call(document.querySelectorAll(".tab")).filter(function(t){return t.dataset.tab==="report";})[0];
+  if(tab) tab.click();
+  buildReport();
+}
+// 生成結果ボタン用：スキルシート（スキルシートタブへ切替して生成）
+function skillFromOutput(){
+  var tab=[].slice.call(document.querySelectorAll(".tab")).filter(function(t){return t.dataset.tab==="skill";})[0];
+  if(tab) tab.click();
+  buildSkill();
+}
+// 生成結果ボタン用：週次振り返り（時間割タブへ切替して生成）
+function weeklyReviewFromOutput(){
+  if(!loadDays().length){ toast("先に時間割タブで日々を保存してください"); return; }
+  var tab=[].slice.call(document.querySelectorAll(".tab")).filter(function(t){return t.dataset.tab==="timetable";})[0];
+  if(tab) tab.click();
+  buildWeeklyReview();
+}
+// 生成結果ボタン用：個人用カイゼンMTG（時間割タブへ切替して生成）
+function kaizenMTGFromOutput(){
+  if(!loadDays().length && !v("kz_hobby") && !v("kz_change")){ toast("先に時間割タブで日々を保存するか、趣味枠/Changeを入力してください"); return; }
+  var tab=[].slice.call(document.querySelectorAll(".tab")).filter(function(t){return t.dataset.tab==="timetable";})[0];
+  if(tab) tab.click();
+  buildKaizenMTG();
+}
+// 生成結果ボタン用：一人MTG（PDCAタブへ切替して生成）
+function pdcaFromOutput(){
+  var tab=[].slice.call(document.querySelectorAll(".tab")).filter(function(t){return t.dataset.tab==="pdca";})[0];
+  if(tab) tab.click();
+  buildPdca();
+}
+
+/* ============ 一人MTG2（目標・KPT＋Change） ============ */
+// 生成結果ボタン用
+function mtg2FromOutput(){
+  var tab=[].slice.call(document.querySelectorAll(".tab")).filter(function(t){return t.dataset.tab==="mtg2";})[0];
+  if(tab) tab.click();
+  buildMtg2();
+}
+// 保存ログからKeep/Problem/Tryを下書き
+function mtg2DraftFromLog(){
+  var days=loadDays();
+  if(!days.length){ toast("保存ログがありません（時間割タブで保存）"); return; }
+  days=days.slice().sort(function(a,b){return (dateKey(a.date)||0)-(dateKey(b.date)||0);}).slice(-7);
+  var keeps=[], probs=[], tries=[];
+  days.forEach(function(d){
+    if(d.keep) keeps.push(d.keep);
+    if(d.goal && d.rate>=75) keeps.push("【めあて達成】"+d.goal);
+    if(d.problem) probs.push(d.problem);
+    if(d.tryv) tries.push(d.tryv);
+    (d.periods||[]).forEach(function(p){ if(!(p.kind==="break"||p.isBreak) && p.status==="△"){ var w=(p.actual||p.plan||"").trim(); if(w) probs.push(w+"（未達）"); } });
+  });
+  function uniq(a){ var s={},o=[]; a.forEach(function(x){ if(!s[x]){s[x]=1;o.push(x);} }); return o; }
+  if(!v("g2_keep") && keeps.length) document.getElementById("g2_keep").value=uniq(keeps).join("\n");
+  if(!v("g2_problem") && probs.length) document.getElementById("g2_problem").value=uniq(probs).join("\n");
+  if(!v("g2_try") && tries.length) document.getElementById("g2_try").value=uniq(tries).join("\n");
+  toast("Keep / Problem / Try を下書きしました");
+}
+function buildMtg2(){
+  currentTab="mtg2";
+  var theme=v("g2_theme"), due=v("g2_due");
+  var minG=v("g2_min"), maxG=v("g2_max"), minT=v("g2_min_time"), maxT=v("g2_max_time");
+  var keep=lines(v("g2_keep")), prob=lines(v("g2_problem")), tryv=lines(v("g2_try")), chg=lines(v("g2_change"));
+
+  /* テキスト版 */
+  var o=[];
+  o.push(BAR); o.push("🎯 一人MTG2（目標・KPT）　"+nowParts().date); o.push(BAR);
+  if(theme) o.push("テーマ："+theme);
+  if(due) o.push("期日："+due);
+  o.push("");
+  o.push(BAR2); o.push("🎯 目標（2段階）"); o.push(BAR2);
+  o.push("🟢 最低限の目標"+(minT?("（目安 "+minT+"）"):"")+"：");
+  (minG?[minG]:["（必ず達成するラインを書こう）"]).forEach(function(x){ o.push("　"+x); });
+  o.push("🌟 最高の目標"+(maxT?("（目安 "+maxT+"）"):"")+"：");
+  (maxG?[maxG]:["（できたら最高のラインを書こう）"]).forEach(function(x){ o.push("　"+x); });
+  o.push("");
+  o.push(BAR2); o.push("✅ Keep（続けたい・うまくいった）"); o.push(BAR2);
+  (keep.length?keep:["（記録なし）"]).forEach(function(x){ o.push("・"+x); });
+  o.push("");
+  o.push(BAR2); o.push("🌧 Problem（課題）"); o.push(BAR2);
+  (prob.length?prob:["（特になし）"]).forEach(function(x){ o.push("・"+x); });
+  o.push("");
+  o.push(BAR2); o.push("🌱 Try（次に試す）"); o.push(BAR2);
+  (tryv.length?tryv:["（試したいことを書こう）"]).forEach(function(x){ o.push("・"+x); });
+  o.push("");
+  o.push(BAR2); o.push("🔄 Change（やめる・変える）"); o.push(BAR2);
+  (chg.length?chg:["（やめる/変えることを書こう）"]).forEach(function(x){ o.push("・"+x); });
+  o.push("");
+  o.push("🐰 うさうさ先生：まず『最低限の目標』を死守。余力で『最高の目標』へ。期日から逆算して一歩目を決めよう。");
+  var txt=o.join("\n");
+
+  /* Markdown版 */
+  var m=[];
+  m.push("# 🎯 一人MTG2（目標・KPT）");
+  m.push("");
+  if(theme) m.push("- **テーマ**："+theme);
+  if(due) m.push("- **期日**："+due);
+  m.push("- 日付："+nowParts().date);
+  m.push("");
+  m.push("## 🎯 目標（2段階）");
+  m.push("");
+  m.push("| 区分 | 目標 | 時間の目安 |");
+  m.push("|---|---|---|");
+  m.push("| 🟢 最低限 | "+(minG||"（必ず達成）").replace(/\n/g,"／")+" | "+(minT||"")+" |");
+  m.push("| 🌟 最高 | "+(maxG||"（できたら最高）").replace(/\n/g,"／")+" | "+(maxT||"")+" |");
+  m.push("");
+  m.push("## ✅ Keep"); m.push(""); (keep.length?keep:["（記録なし）"]).forEach(function(x){m.push("- "+x);}); m.push("");
+  m.push("## 🌧 Problem"); m.push(""); (prob.length?prob:["（特になし）"]).forEach(function(x){m.push("- "+x);}); m.push("");
+  m.push("## 🌱 Try"); m.push(""); (tryv.length?tryv:["（試したいこと）"]).forEach(function(x){m.push("- "+x);}); m.push("");
+  m.push("## 🔄 Change"); m.push(""); (chg.length?chg:["（やめる/変える）"]).forEach(function(x){m.push("- "+x);}); m.push("");
+  m.push("> 🐰 まず最低限を死守、余力で最高へ。期日から逆算して一歩目を決めよう。");
+  var md=m.join("\n");
+
+  setOut(txt, md);
+}
+
+/* ============ 一人MTG（PDCA）タイマー ============ */
+var PDCA_PHASES=[
+  {key:"P", name:"📝 Plan（計画）", min:"pd_min_P", sub:"目標とやることを書き出す"},
+  {key:"D", name:"🏃 Do（実行）",  min:"pd_min_D", sub:"手を動かす・進める"},
+  {key:"C", name:"🔍 Check（評価）",min:"pd_min_C", sub:"結果をふりかえる"},
+  {key:"A", name:"🚀 Act（改善）",  min:"pd_min_A", sub:"次の一手を決める"}
+];
+var pdca={timer:null, idx:-1, remain:0, total:0, running:false, mode:null};
+
+function pdcaFmt(sec){ var m=Math.floor(sec/60), s=sec%60; return ("0"+m).slice(-2)+":"+("0"+s).slice(-2); }
+function pdcaSetClock(){
+  document.getElementById("pd_clock").textContent=pdcaFmt(Math.max(0,pdca.remain));
+  var fill=document.getElementById("pd_barfill");
+  fill.style.width = pdca.total>0 ? (Math.max(0,pdca.remain)/pdca.total*100)+"%" : "0%";
+}
+function pdcaHighlight(phaseKey){
+  [].slice.call(document.querySelectorAll(".pdca-step")).forEach(function(el){
+    el.classList.toggle("active", el.dataset.phase===phaseKey);
+  });
+}
+function pdcaBeep(){
+  if(!document.getElementById("pd_sound") || !document.getElementById("pd_sound").checked) return;
+  try{
+    var Ctx=window.AudioContext||window.webkitAudioContext; if(!Ctx) return;
+    var ctx=new Ctx(); var osc=ctx.createOscillator(); var g=ctx.createGain();
+    osc.connect(g); g.connect(ctx.destination);
+    osc.type="sine"; osc.frequency.value=880; g.gain.value=0.15;
+    osc.start(); setTimeout(function(){ osc.stop(); ctx.close&&ctx.close(); }, 350);
+  }catch(e){}
+}
+function pdcaTick(){
+  pdca.remain--;
+  pdcaSetClock();
+  if(pdca.remain<=0){
+    pdcaBeep();
+    if(pdca.mode==="auto"){
+      // 次のステップへ
+      pdcaGoto(pdca.idx+1);
+    } else {
+      pdcaStopTimer();
+      document.getElementById("pd_phase").textContent="⏰ 終了";
+      document.getElementById("pd_sub").textContent="おつかれさま🐰";
+      document.getElementById("pdcaTimer").classList.remove("running");
+    }
+  }
+}
+function pdcaStopTimer(){
+  if(pdca.timer){ clearInterval(pdca.timer); pdca.timer=null; }
+  pdca.running=false;
+}
+function pdcaStartTimer(){
+  pdcaStopTimer();
+  pdca.running=true;
+  document.getElementById("pdcaTimer").classList.add("running");
+  pdca.timer=setInterval(pdcaTick,1000);
+}
+function pdcaPhaseMinutes(i){
+  var ph=PDCA_PHASES[i]; var el=document.getElementById(ph.min);
+  var mn=parseInt(el&&el.value,10); if(isNaN(mn)||mn<1) mn=1;
+  return mn;
+}
+function pdcaGoto(i){
+  if(i>=PDCA_PHASES.length){
+    pdcaStopTimer();
+    document.getElementById("pd_phase").textContent="🎉 MTG完了";
+    document.getElementById("pd_clock").textContent="00:00";
+    document.getElementById("pd_sub").textContent="PDCAを1周しました。お疲れさまでした🐰";
+    document.getElementById("pdcaTimer").classList.remove("running");
+    pdcaHighlight(null);
+    pdca.idx=-1; pdca.mode=null;
+    toast("PDCA 1周 完了！");
+    return;
+  }
+  pdca.idx=i; pdca.mode="auto";
+  var ph=PDCA_PHASES[i];
+  pdca.total=pdcaPhaseMinutes(i)*60; pdca.remain=pdca.total;
+  document.getElementById("pd_phase").textContent=ph.name;
+  document.getElementById("pd_sub").textContent=ph.sub+"（残り "+pdcaPhaseMinutes(i)+"分）";
+  pdcaHighlight(ph.key);
+  pdcaSetClock();
+  pdcaStartTimer();
+}
+function pdcaStart(){
+  // 一時停止からの再開か、最初から開始か
+  if(!pdca.running && pdca.idx>=0 && pdca.remain>0){ pdcaStartTimer(); return; }
+  pdcaGoto(0);
+}
+function pdcaPause(){
+  if(pdca.running){ pdcaStopTimer(); document.getElementById("pdcaTimer").classList.remove("running");
+    document.getElementById("pd_sub").textContent="一時停止中（▶で再開）"; }
+}
+function pdcaSkip(){
+  if(pdca.mode==="auto" && pdca.idx>=0){ pdcaGoto(pdca.idx+1); }
+  else { toast("自動MTG中のみ次へ進めます"); }
+}
+function pdcaReset(){
+  pdcaStopTimer();
+  pdca.idx=-1; pdca.mode=null; pdca.remain=0; pdca.total=0;
+  document.getElementById("pd_phase").textContent="準備OK";
+  document.getElementById("pd_clock").textContent="00:00";
+  document.getElementById("pd_sub").textContent="「▶ MTG開始」で Plan から始まります";
+  document.getElementById("pd_barfill").style.width="0%";
+  document.getElementById("pdcaTimer").classList.remove("running");
+  pdcaHighlight(null);
+}
+// 単発タイマー（指定分カウントダウンのみ）
+function pdcaQuick(min){
+  pdcaStopTimer();
+  pdca.mode="quick"; pdca.idx=-1;
+  pdca.total=min*60; pdca.remain=pdca.total;
+  document.getElementById("pd_phase").textContent="⏱ "+min+"分タイマー";
+  document.getElementById("pd_sub").textContent="集中していこう🐰";
+  pdcaHighlight(null);
+  pdcaSetClock();
+  pdcaStartTimer();
+}
+
+// 保存ログからCheck/Actを下書き
+function pdcaDraftFromLog(){
+  var days=loadDays();
+  if(!days.length){ toast("保存ログがありません（時間割タブで保存）"); return; }
+  days=days.slice().sort(function(a,b){return (dateKey(a.date)||0)-(dateKey(b.date)||0);});
+  var recent=days.slice(-7);
+  var probs=[], tries=[], rateSum=0;
+  recent.forEach(function(d){
+    rateSum+=d.rate||0;
+    if(d.problem) probs.push(d.problem);
+    if(d.tryv) tries.push(d.tryv);
+    (d.periods||[]).forEach(function(p){ if(!(p.kind==="break"||p.isBreak) && p.status==="△"){ var w=(p.actual||p.plan||"").trim(); if(w) probs.push(w+"（未達）"); } });
+  });
+  function uniq(a){ var s={},o=[]; a.forEach(function(x){ if(!s[x]){s[x]=1;o.push(x);} }); return o; }
+  probs=uniq(probs); tries=uniq(tries);
+  var avg=recent.length?Math.round(rateSum/recent.length):0;
+  if(!v("pd_check")){
+    document.getElementById("pd_check").value="直近"+recent.length+"日の平均達成率 "+avg+"%\n"+(probs.length?("課題：\n- "+probs.join("\n- ")):"課題：特記なし");
+  }
+  if(!v("pd_act") && tries.length){
+    document.getElementById("pd_act").value=tries.join("\n");
+  }
+  toast("Check / Act を下書きしました");
+}
+
+// 一人MTG（PDCA）を文章として生成
+function buildPdca(){
+  currentTab="pdca";
+  var plan=lines(v("pd_plan")), doo=lines(v("pd_do")), check=lines(v("pd_check")), act=lines(v("pd_act"));
+  var o=[];
+  o.push(BAR); o.push("🔄 一人MTG（PDCA）　"+today()); o.push(BAR);
+  o.push(""); o.push(BAR2); o.push("📝 Plan（計画）"); o.push(BAR2);
+  (plan.length?plan:["（計画を書こう）"]).forEach(function(x){o.push("・"+x);});
+  o.push(""); o.push(BAR2); o.push("🏃 Do（実行）"); o.push(BAR2);
+  (doo.length?doo:["（やったことを書こう）"]).forEach(function(x){o.push("・"+x);});
+  o.push(""); o.push(BAR2); o.push("🔍 Check（評価）"); o.push(BAR2);
+  (check.length?check:["（ふりかえりを書こう）"]).forEach(function(x){o.push("・"+x);});
+  o.push(""); o.push(BAR2); o.push("🚀 Act（改善）"); o.push(BAR2);
+  (act.length?act:["（次の一手を書こう）"]).forEach(function(x){o.push("・"+x);});
+  o.push(""); o.push("🐰 うさうさ先生：PDCAは小さく速く回すほど効きます。Actを1つ実行に移せたら花丸です。");
+  var txt=o.join("\n");
+
+  var m=[];
+  m.push("# 🔄 一人MTG（PDCA）"); m.push(""); m.push("**日付**："+today()); m.push("");
+  m.push("## 📝 Plan（計画）"); m.push(""); (plan.length?plan:["（計画を書こう）"]).forEach(function(x){m.push("- "+x);}); m.push("");
+  m.push("## 🏃 Do（実行）"); m.push(""); (doo.length?doo:["（やったことを書こう）"]).forEach(function(x){m.push("- "+x);}); m.push("");
+  m.push("## 🔍 Check（評価）"); m.push(""); (check.length?check:["（ふりかえりを書こう）"]).forEach(function(x){m.push("- "+x);}); m.push("");
+  m.push("## 🚀 Act（改善）"); m.push(""); (act.length?act:["（次の一手を書こう）"]).forEach(function(x){m.push("- "+x);}); m.push("");
+  m.push("> 🐰 PDCAは小さく速く回すほど効きます。");
+  var md=m.join("\n");
+
+  setOut(txt, md);
+}
+
+/* ============ 自由ひな形（日報） ============ */
+var TPL_KEY="usausa_templates_v1";
+var TPL_VALS_PREFIX="usausa_tplvals_";
+var tplCurrentName=""; // 現在編集中のひな形名
+
+function tplLoadAll(){
+  if(!lsAvailable()) return (window.__memTpls||{});
+  try{ return JSON.parse(window.localStorage.getItem(TPL_KEY)||"{}"); }catch(e){ return {}; }
+}
+function tplStoreAll(obj){
+  if(lsAvailable()){ try{ window.localStorage.setItem(TPL_KEY, JSON.stringify(obj)); }catch(e){} }
+  window.__memTpls=obj;
+}
+// 差し込み値の保存（ひな形ごと）
+function tplLoadVals(name){
+  if(!lsAvailable()) return ((window.__memTplVals||{})[name]||{});
+  try{ return JSON.parse(window.localStorage.getItem(TPL_VALS_PREFIX+name)||"{}"); }catch(e){ return {}; }
+}
+function tplStoreVals(name, vals){
+  if(lsAvailable()){ try{ window.localStorage.setItem(TPL_VALS_PREFIX+name, JSON.stringify(vals)); }catch(e){} }
+  window.__memTplVals=window.__memTplVals||{}; window.__memTplVals[name]=vals;
+}
+
+// {{ }} のプレースホルダを抽出（順序維持・重複除去）
+function tplExtractPh(body){
+  var out=[], seen={}, re=/\{\{\s*([^}]+?)\s*\}\}/g, m;
+  while((m=re.exec(body||""))!==null){ var k=m[1].trim(); if(k && !seen[k]){ seen[k]=1; out.push(k); } }
+  return out;
+}
+// 本文を見て差し込み入力欄を再構築（既存値は保持）
+function tplScan(){
+  var body=v("tpl_body");
+  var phs=tplExtractPh(body);
+  var box=document.getElementById("tpl_fields");
+  // 既存入力値を退避
+  var prev={};
+  [].slice.call(box.querySelectorAll("[data-ph]")).forEach(function(el){ prev[el.getAttribute("data-ph")]=el.value; });
+  if(!phs.length){ box.innerHTML='<div class="empty">本文に <code>{{ }}</code> を書くと、ここに入力欄が出ます。</div>'; return; }
+  box.innerHTML="";
+  phs.forEach(function(ph){
+    var row=document.createElement("div"); row.className="ph-row";
+    var lab=document.createElement("label"); lab.textContent=ph;
+    var ta=document.createElement("textarea"); ta.setAttribute("data-ph",ph);
+    ta.placeholder=ph+"を入力";
+    if(prev[ph]!=null) ta.value=prev[ph];
+    row.appendChild(lab); row.appendChild(ta); box.appendChild(row);
+  });
+  // 日付があれば今日を自動補完（空のときだけ）
+  // 日付・日時系プレースホルダは開いた瞬間の値を自動補完（空のときだけ）
+  var np=nowParts();
+  var autofill={ "日付":np.date, "日時":np.datetime, "曜日":np.weekday, "時刻":np.time, "今日":np.date };
+  Object.keys(autofill).forEach(function(k){
+    var el=box.querySelector('[data-ph="'+k+'"]');
+    if(el && !el.value){ el.value=autofill[k]; }
+  });
+}
+function tplReadVals(){
+  var vals={};
+  [].slice.call(document.querySelectorAll("#tpl_fields [data-ph]")).forEach(function(el){ vals[el.getAttribute("data-ph")]=el.value; });
+  return vals;
+}
+function tplInsertPh(name){
+  var ta=document.getElementById("tpl_body");
+  var tag="{{"+name+"}}";
+  var s=ta.selectionStart, e=ta.selectionEnd, val=ta.value;
+  if(s==null){ ta.value=val+tag; } else { ta.value=val.slice(0,s)+tag+val.slice(e); ta.selectionStart=ta.selectionEnd=s+tag.length; }
+  ta.focus(); tplScan();
+}
+
+function tplRenderSaved(){
+  var all=tplLoadAll(), names=Object.keys(all);
+  var wrap=document.getElementById("tpl_savedList");
+  if(!names.length){ wrap.innerHTML='<span class="hint" style="margin:0;">保存したひな形はまだありません。本文を書いて「保存」してください。</span>'; return; }
+  wrap.innerHTML='<span class="hint" style="margin:0;">保存済み：</span>';
+  names.forEach(function(nm){
+    var chip=document.createElement("span"); chip.className="tpl-chip"+(nm===tplCurrentName?" cur":"");
+    var lbl=document.createElement("span"); lbl.textContent=nm; lbl.onclick=function(){ tplLoadOne(nm); };
+    var x=document.createElement("span"); x.className="x"; x.textContent="×"; x.title="削除";
+    x.onclick=function(ev){ ev.stopPropagation(); tplDelete(nm); };
+    chip.appendChild(lbl); chip.appendChild(x); wrap.appendChild(chip);
+  });
+}
+function tplSave(){
+  var name=(v("tpl_name")||"").trim();
+  var body=v("tpl_body");
+  if(!name){ toast("ひな形の名前を入れてください"); return; }
+  if(!body){ toast("本文を入力してください"); return; }
+  var all=tplLoadAll();
+  var existed=!!all[name];
+  all[name]=body; tplStoreAll(all);
+  tplStoreVals(name, tplReadVals()); // 入力値も一緒に保存
+  tplCurrentName=name;
+  tplRenderSaved();
+  toast(existed?"上書き保存しました":"保存しました");
+}
+function tplLoadOne(name){
+  var all=tplLoadAll();
+  if(all[name]==null) return;
+  document.getElementById("tpl_name").value=name;
+  document.getElementById("tpl_body").value=all[name];
+  tplCurrentName=name;
+  tplScan();
+  // 保存済みの入力値を流し込む
+  var vals=tplLoadVals(name);
+  [].slice.call(document.querySelectorAll("#tpl_fields [data-ph]")).forEach(function(el){
+    var k=el.getAttribute("data-ph"); if(vals[k]!=null) el.value=vals[k];
+  });
+  tplRenderSaved();
+  toast("「"+name+"」を読み込みました");
+}
+function tplNew(){
+  document.getElementById("tpl_name").value="";
+  document.getElementById("tpl_body").value="";
+  tplCurrentName="";
+  tplScan(); tplRenderSaved();
+}
+function tplDelete(name){
+  if(window.confirm && !window.confirm("「"+name+"」を削除しますか？")) return;
+  var all=tplLoadAll(); delete all[name]; tplStoreAll(all);
+  if(lsAvailable()){ try{ window.localStorage.removeItem(TPL_VALS_PREFIX+name); }catch(e){} }
+  if(window.__memTplVals) delete window.__memTplVals[name];
+  if(tplCurrentName===name) tplCurrentName="";
+  tplRenderSaved();
+  toast("削除しました");
+}
+
+// 差し込み生成
+function buildTplDoc(){
+  currentTab="tpl";
+  var body=v("tpl_body");
+  if(!body){ toast("本文がありません"); return; }
+  var vals=tplReadVals();
+  // 現在のひな形に紐づく入力値も保存
+  if(tplCurrentName){ tplStoreVals(tplCurrentName, vals); }
+  var out=body.replace(/\{\{\s*([^}]+?)\s*\}\}/g, function(_,k){ k=k.trim(); var x=vals[k]; return (x==null||x==="")?("（"+k+"）"):x; });
+  setOut(out, out); // テキスト＝Markdownとして同一（自由フォーマットのため）
+}
+
+// JSON 書き出し／取り込み
+function tplExport(){
+  var all=tplLoadAll();
+  if(!Object.keys(all).length){ toast("保存したひな形がありません"); return; }
+  // 値も含めてエクスポート
+  var valsAll={};
+  Object.keys(all).forEach(function(nm){ valsAll[nm]=tplLoadVals(nm); });
+  var payload={templates:all, values:valsAll, _type:"usausa_templates", _ver:1};
+  var blob=new Blob([JSON.stringify(payload,null,2)],{type:"application/json"});
+  _saveBlob(blob, "日報ひな形_"+today()+".json");
+  toast("ひな形をJSONで書き出しました");
+}
+function tplImport(input){
+  var file=input.files&&input.files[0]; if(!file) return;
+  var reader=new FileReader();
+  reader.onload=function(){
+    try{
+      var data=JSON.parse(String(reader.result||"{}"));
+      var tpls = data.templates || data; // {templates,values} 形式 or 素の{name:body}
+      if(typeof tpls!=="object"){ toast("形式が不正です"); input.value=""; return; }
+      var all=tplLoadAll();
+      var n=0;
+      Object.keys(tpls).forEach(function(nm){ if(typeof tpls[nm]==="string"){ all[nm]=tpls[nm]; n++; } });
+      tplStoreAll(all);
+      if(data.values){ Object.keys(data.values).forEach(function(nm){ tplStoreVals(nm, data.values[nm]||{}); }); }
+      tplRenderSaved();
+      toast(n+"件のひな形を取り込みました");
+    }catch(e){ toast("読み込みに失敗しました"); }
+    input.value="";
+  };
+  reader.readAsText(file,"UTF-8");
+}
+
+// 生成結果ボタン用：ひな形日報（タブ切替して生成）
+function tplDocFromOutput(){
+  var tab=[].slice.call(document.querySelectorAll(".tab")).filter(function(t){return t.dataset.tab==="tpl";})[0];
+  if(tab) tab.click();
+  if(!v("tpl_body")){ toast("先に自由ひな形タブで本文を作ってください"); return; }
+  buildTplDoc();
+}
+
+// 初回起動時：標準ひな形を登録し、本文欄にも読み込む
+var TPL_SEEDED_KEY="usausa_tpl_seeded_v1";
+function tplDefaultBody(){
+  return [
+    "【業務日報】{{日付}}　記入時刻 {{時刻}}",
+    "氏名：{{氏名}}",
+    "",
+    "■本日のめあて",
+    "{{めあて}}",
+    "",
+    "■今日やったこと",
+    "{{今日やったこと}}",
+    "",
+    "■できたこと / 気づき（Keep）",
+    "{{できたこと}}",
+    "",
+    "■課題・うまくいかなかったこと（Problem）",
+    "{{課題}}",
+    "",
+    "■明日やること（Try）",
+    "{{明日の予定}}",
+    "",
+    "■相談・共有したいこと",
+    "{{相談}}",
+    "",
+    "■趣味枠（個人開発・記事・インプット）",
+    "{{趣味枠}}"
+  ].join("\n");
+}
+function tplSeedDefault(){
+  var seeded=false;
+  if(lsAvailable()){ try{ seeded = window.localStorage.getItem(TPL_SEEDED_KEY)==="1"; }catch(e){} }
+  else { seeded = !!window.__tplSeeded; }
+  var all=tplLoadAll();
+  var name="うさうさ日報（曜日つき・標準）";
+  // 初回（seedしておらず、かつ同名が無い）だけ登録
+  if(!seeded && all[name]==null){
+    all[name]=tplDefaultBody();
+    tplStoreAll(all);
+    if(lsAvailable()){ try{ window.localStorage.setItem(TPL_SEEDED_KEY,"1"); }catch(e){} }
+    window.__tplSeeded=true;
+    // 本文欄が空なら初期表示として読み込む
+    if(!v("tpl_body")){
+      document.getElementById("tpl_name").value=name;
+      document.getElementById("tpl_body").value=all[name];
+      tplCurrentName=name;
+    }
+  }
+}
+
+/* ============ メモから月末報告書（タスク別・タグ別の時間集計つき） ============ */
+// 1行から所要時間（分）を抽出。「（90分）」「90分」「1h」「1:30」「1時間30分」などに対応
+function parseMinutes(line){
+  if(!line) return 0;
+  var total=0, matched=false;
+  // 1時間30分 / 2時間 / 1h（時間＋任意の分）
+  var hh=/(\d+(?:\.\d+)?)\s*(?:時間|hr|h|時)/i.exec(line);
+  if(hh){ total += Math.round(parseFloat(hh[1])*60); matched=true; }
+  // 分（90分 / 45min / 30m）。日本語の「分」は語境界が効かないので \b を使わない
+  var mm=/(\d+)\s*(?:分|min|m)(?![a-z])/i.exec(line);
+  if(mm){ total += parseInt(mm[1],10); matched=true; }
+  // 上で取れなければ 1:30（時:分）形式
+  if(!matched){
+    var hm=/(\d{1,2}):(\d{2})/.exec(line);
+    if(hm){ total += parseInt(hm[1],10)*60+parseInt(hm[2],10); matched=true; }
+  }
+  return matched? total : 0;
+}
+// タスク名の正規化（時間表記・タグ・先頭記号を落とす）
+function memoTaskName(line){
+  var s=line;
+  s=s.replace(/[（(]\s*\d+(?:\.\d+)?\s*(?:時間|分|h|hr|min|m)\s*[)）]/gi,""); // （90分）等の括弧つき
+  s=s.replace(/\d{1,2}:\d{2}/g,"");                 // 1:30
+  s=s.replace(/\d+(?:\.\d+)?\s*(?:時間|h|hr|時)\s*(?:\d+\s*(?:分|min|m))?/gi,""); // 1時間30分/2h
+  s=s.replace(/\d+\s*(?:分|min|m)(?![a-z])/gi,"");          // 90分
+  s=normWorkItem(s);                                 // 記号・タグ・状態語除去（既存）
+  return s;
+}
+// メモ全体を解析：{taskMin, tagMin, dates, items}
+function analyzeMemo(text){
+  var taskMin={}, tagMin={}, dates=[], items=[];
+  (text||"").split(/\r?\n/).forEach(function(raw){
+    var line=raw.trim(); if(!line) return;
+    // 日付行
+    var dm=/(\d{4})\D+(\d{1,2})\D+(\d{1,2})/.exec(line);
+    if(dm && line.replace(/[\d\/\-\.年月日（）\(\)月火水木金土曜\s]/g,"").length<=2){ dates.push(line); return; }
+    // CSV対応：カンマがあればセルごとに見る
+    var cells = line.indexOf(",")>=0 ? line.split(",") : [line];
+    cells.forEach(function(c){
+      c=c.trim(); if(!c) return;
+      var mins=parseMinutes(c);
+      var tags=extractTags(c);
+      var name=memoTaskName(c);
+      if(isMeaningful(name)){
+        items.push(name);
+        if(mins>0) taskMin[name]=(taskMin[name]||0)+mins;
+      }
+      // タグ別：タグに時間を割り当て（同一セルの重複タグは1回）
+      if(mins>0 && tags.length){
+        var uniqT={}; tags.forEach(function(t){uniqT[t]=1;});
+        Object.keys(uniqT).forEach(function(t){ tagMin[t]=(tagMin[t]||0)+mins; });
+      }
+    });
+  });
+  return {taskMin:taskMin, tagMin:tagMin, dates:dates, items:items};
+}
+
+// メモCSV/テキスト読み込み（貼り付け欄に追記）
+function repMemoImport(input){
+  var file=input.files&&input.files[0]; if(!file) return;
+  var reader=new FileReader();
+  reader.onload=function(){
+    var text=String(reader.result||"").replace(/^\uFEFF/,"");
+    var ta=document.getElementById("rep_memo");
+    ta.value = ta.value ? (ta.value.replace(/\s+$/,"")+"\n"+text) : text;
+    toast("メモを追記しました");
+    input.value="";
+  };
+  reader.readAsText(file,"UTF-8");
+}
+
+function buildMonthlyReportFromMemo(){
+  currentTab="timetable";
+  var text=v("rep_memo");
+  if(!text){ toast("メモを貼り付けてください"); return; }
+  var a=analyzeMemo(text);
+  var taskKeys=Object.keys(a.taskMin).sort(function(x,y){return a.taskMin[y]-a.taskMin[x];});
+  var tagKeys=Object.keys(a.tagMin).sort(function(x,y){return a.tagMin[y]-a.tagMin[x];});
+  var totalMin=taskKeys.reduce(function(s,k){return s+a.taskMin[k];},0);
+  // やったこと候補（時間なしの作業も含む・重複集約）
+  var doneMap={}; a.items.forEach(function(t){ doneMap[t]=(doneMap[t]||0)+1; });
+  var doneList=Object.keys(doneMap).sort(function(x,y){return doneMap[y]-doneMap[x];});
+  var nDays=a.dates.length;
+  var head=(v("rep_month")||"")+" 月末報告書（メモ集計）";
+  var U=ROUND_UNIT||15;
+  function pctTask(min){ return totalMin>0? Math.round(min/totalMin*100):0; }
+
+  /* テキスト版 */
+  var o=[];
+  o.push(BAR); o.push("📋 "+head); o.push(BAR);
+  o.push("対象："+(nDays?nDays+"日分":"メモ")+"／ 合計時間 "+fmtHM(totalMin));
+  o.push("");
+  if(taskKeys.length){
+    o.push(BAR2); o.push("🧩 タスク別 時間まとめ（多い順）"); o.push(BAR2);
+    taskKeys.forEach(function(k){ o.push("・"+k+"："+fmtHM(a.taskMin[k])+"（"+a.taskMin[k]+"分・"+pctTask(a.taskMin[k])+"%）"); });
+    o.push("合計："+fmtHM(totalMin));
+    o.push("");
+  }
+  if(tagKeys.length){
+    o.push(BAR2); o.push("🏷 タグ別 時間集計"); o.push(BAR2);
+    tagKeys.forEach(function(k){ o.push("・#"+k+"："+fmtHM(a.tagMin[k])); });
+    o.push("");
+  }
+  o.push(BAR2); o.push("✅ やったこと"); o.push(BAR2);
+  (doneList.length?doneList:["（メモから抽出できる作業がありませんでした）"]).forEach(function(x){ o.push("・"+x); });
+  o.push("");
+  o.push(BAR2); o.push("📣 リーダーに伝えたいこと"); o.push(BAR2);
+  var leader=lines(v("rep_leader"));
+  (leader.length?leader:["（特になし）"]).forEach(function(x){ o.push("・"+x); });
+  var txt=o.join("\n");
+
+  /* Markdown版 */
+  var m=[];
+  m.push("# 📋 "+head); m.push("");
+  m.push("- 対象："+(nDays?nDays+"日分":"メモ")+" ／ 合計時間 "+fmtHM(totalMin)); m.push("");
+  if(taskKeys.length){
+    m.push("## 🧩 タスク別 時間まとめ"); m.push("");
+    m.push("| タスク | 時間 | 分 | 割合 |");
+    m.push("|---|---|---:|---:|");
+    taskKeys.forEach(function(k){ m.push("| "+k+" | "+fmtHM(a.taskMin[k])+" | "+a.taskMin[k]+" | "+pctTask(a.taskMin[k])+"% |"); });
+    m.push("| **合計** | **"+fmtHM(totalMin)+"** | **"+totalMin+"** | 100% |");
+    m.push("");
+  }
+  if(tagKeys.length){
+    m.push("## 🏷 タグ別 時間集計"); m.push("");
+    m.push("| タグ | 時間 | 分 |");
+    m.push("|---|---|---:|");
+    tagKeys.forEach(function(k){ m.push("| #"+k+" | "+fmtHM(a.tagMin[k])+" | "+a.tagMin[k]+" |"); });
+    m.push("");
+  }
+  m.push("## ✅ やったこと"); m.push("");
+  (doneList.length?doneList:["（抽出なし）"]).forEach(function(x){ m.push("- "+x); });
+  m.push("");
+  m.push("## 📣 リーダーに伝えたいこと"); m.push("");
+  (leader.length?leader:["（特になし）"]).forEach(function(x){ m.push("- "+x); });
+  var md=m.join("\n");
+
+  setOut(txt, md);
+}
+
+function buildMonthlyReport(){
+  currentTab="timetable";
+  var from=v("rep_from"), to=v("rep_to");
+  var days = (from||to) ? daysInRange(from,to) : loadDays();
+  if(!days.length){ toast("対象期間に保存データがありません"); return; }
+
+  // 集計（選択中の丸め単位・カスタム区分込み）
+  var km={lesson:0,meeting:0,work:0}, brk=0, custom={}, tagMin={}, planSum=0, actSum=0, rateSum=0;
+  var insCount=0, insMin=0;
+  days.forEach(function(d){
+    km.lesson+=(d.kindMin&&d.kindMin.lesson)||0;
+    km.meeting+=(d.kindMin&&d.kindMin.meeting)||0;
+    km.work+=(d.kindMin&&d.kindMin.work)||0;
+    brk+=d.breakMin||0;
+    if(d.customMin){ Object.keys(d.customMin).forEach(function(k){ custom[k]=(custom[k]||0)+d.customMin[k]; }); }
+    // タグ別：各日のコマから積み上げ
+    var tm=tagMinutesFromPeriods(d.periods);
+    Object.keys(tm).forEach(function(k){ tagMin[k]=(tagMin[k]||0)+tm[k]; });
+    // 差し込み対応の集計
+    (d.periods||[]).forEach(function(p){ if(p.isInsert && !(p.kind==="break"||p.isBreak)){ insCount++; insMin+=p.dur||0; } });
+    planSum+=d.planMin||0; actSum+=d.actMin||0; rateSum+=d.rate||0;
+  });
+  var workTotal = km.lesson+km.meeting+km.work + Object.keys(custom).reduce(function(a,k){return a+custom[k];},0);
+  var avgRate = Math.round(rateSum/days.length);
+  function pct(min){ return workTotal>0 ? Math.round(min/workTotal*100) : 0; }
+
+  // やったこと（各日の実績・作業を集約）／達成したこと（◎コマと達成しためあて）／課題（Problem＋△未達）
+  var doneList=[], achievedList=[], issueList=[];
+  days.forEach(function(d){
+    (d.periods||[]).forEach(function(p){
+      if(p.isBreak||p.kind==="break") return;
+      var what=(p.actual||p.plan||"").trim();
+      if(what){
+        if(p.status==="◎"){ achievedList.push(what); doneList.push(what); }
+        else if(p.status==="○"){ doneList.push(what); }
+        else if(p.status==="△"){ issueList.push(what+"（未達）"); doneList.push(what); }
+        else { doneList.push(what); }
+      }
+    });
+    if(d.goal && d.rate>=75) achievedList.push("【めあて】"+d.goal+"（"+d.date+"）");
+    if(d.problem) issueList.push(d.problem+"（"+d.date+"）");
+  });
+  function uniq(arr){ var seen={}, out=[]; arr.forEach(function(x){ if(!seen[x]){seen[x]=1; out.push(x);} }); return out; }
+  doneList=uniq(doneList); achievedList=uniq(achievedList); issueList=uniq(issueList);
+
+  var head=(v("rep_month")||"")+" 月末報告書";
+  var period = (from||to) ? ((from||"")+" 〜 "+(to||"")) : "保存した全期間";
+
+  /* テキスト版 */
+  var o=[];
+  o.push(BAR); o.push("📋 "+head); o.push(BAR);
+  o.push("対象期間："+period+"（"+days.length+"日分）");
+  o.push("平均達成率："+avgRate+"%");
+  o.push("");
+  o.push(BAR2); o.push("⏱ 区分別 時間集計（"+unitLabel()+"／"+modeLabel()+"）"); o.push(BAR2);
+  o.push("授業："+fmt15(km.lesson)+"  "+pct(km.lesson)+"%");
+  o.push("会議："+fmt15(km.meeting)+"  "+pct(km.meeting)+"%");
+  o.push("作業："+fmt15(km.work)+"  "+pct(km.work)+"%");
+  Object.keys(custom).forEach(function(k){ o.push(k+"："+fmt15(custom[k])+"  "+pct(custom[k])+"%"); });
+  o.push("（休憩："+fmt15(brk)+"）");
+  o.push("稼働合計："+fmt15(workTotal));
+  if(insCount){ o.push("⚡差し込み対応："+insCount+"件・"+fmt15(insMin)+"（うち稼働の "+(workTotal?Math.round(insMin/workTotal*100):0)+"%）"); }
+  o.push("");
+  var tagKeysT=Object.keys(tagMin).sort(function(a,b){return tagMin[b]-tagMin[a];});
+  if(tagKeysT.length){
+    o.push(BAR2); o.push("🏷 タグ別 時間集計"); o.push(BAR2);
+    tagKeysT.forEach(function(k){ o.push("#"+k+"："+fmt15(tagMin[k])); });
+    o.push("");
+  }
+  o.push(BAR2); o.push("✅ やったこと"); o.push(BAR2);
+  doneList.forEach(function(x){ o.push("・"+x); });
+  o.push("");
+  o.push(BAR2); o.push("🎯 達成したこと"); o.push(BAR2);
+  (achievedList.length?achievedList:["（達成度◎のコマがありません）"]).forEach(function(x){ o.push("・"+x); });
+  o.push("");
+  o.push(BAR2); o.push("⚠ 課題"); o.push(BAR2);
+  (issueList.length?issueList:["（特記事項なし）"]).forEach(function(x){ o.push("・"+x); });
+  o.push("");
+  o.push(BAR2); o.push("📣 リーダーに伝えたいこと"); o.push(BAR2);
+  var leader=lines(v("rep_leader"));
+  (leader.length?leader:["（特になし）"]).forEach(function(x){ o.push("・"+x); });
+  var txt=o.join("\n");
+
+  /* Markdown版 */
+  var m=[];
+  m.push("# 📋 "+head);
+  m.push("");
+  m.push("- 対象期間："+period+"（"+days.length+"日分）");
+  m.push("- 平均達成率："+avgRate+"%");
+  m.push("");
+  m.push("## ⏱ 区分別 時間集計（"+unitLabel()+"／"+modeLabel()+"）");
+  m.push("");
+  var U=ROUND_UNIT||15;
+  m.push("| 区分 | 時間 | コマ("+U+"分) | 割合 |");
+  m.push("|---|---|---:|---:|");
+  m.push("| 授業 | "+fmtHM(km.lesson)+" | "+Math.round(km.lesson/U)+" | "+pct(km.lesson)+"% |");
+  m.push("| 会議 | "+fmtHM(km.meeting)+" | "+Math.round(km.meeting/U)+" | "+pct(km.meeting)+"% |");
+  m.push("| 作業 | "+fmtHM(km.work)+" | "+Math.round(km.work/U)+" | "+pct(km.work)+"% |");
+  Object.keys(custom).forEach(function(k){ m.push("| "+k+" | "+fmtHM(custom[k])+" | "+Math.round(custom[k]/U)+" | "+pct(custom[k])+"% |"); });
+  m.push("| （休憩） | "+fmtHM(brk)+" | "+Math.round(brk/U)+" | — |");
+  m.push("| **稼働合計** | **"+fmtHM(workTotal)+"** | **"+Math.round(workTotal/U)+"** | 100% |");
+  if(insCount){ m.push(""); m.push("**⚡差し込み対応**："+insCount+"件・"+fmtHM(insMin)+"（稼働の "+(workTotal?Math.round(insMin/workTotal*100):0)+"%）"); }
+  m.push("");
+  var tagKeysM=Object.keys(tagMin).sort(function(a,b){return tagMin[b]-tagMin[a];});
+  if(tagKeysM.length){
+    m.push("## 🏷 タグ別 時間集計");
+    m.push("");
+    m.push("| タグ | 時間 | コマ("+U+"分) |");
+    m.push("|---|---|---:|");
+    tagKeysM.forEach(function(k){ m.push("| #"+k+" | "+fmtHM(tagMin[k])+" | "+Math.round(tagMin[k]/U)+" |"); });
+    m.push("");
+  }
+  m.push("## ✅ やったこと");
+  m.push("");
+  doneList.forEach(function(x){ m.push("- "+x); });
+  m.push("");
+  m.push("## 🎯 達成したこと");
+  m.push("");
+  (achievedList.length?achievedList:["（達成度◎のコマがありません）"]).forEach(function(x){ m.push("- "+x); });
+  m.push("");
+  m.push("## ⚠ 課題");
+  m.push("");
+  (issueList.length?issueList:["（特記事項なし）"]).forEach(function(x){ m.push("- "+x); });
+  m.push("");
+  m.push("## 📣 リーダーに伝えたいこと");
+  m.push("");
+  (leader.length?leader:["（特になし）"]).forEach(function(x){ m.push("- "+x); });
+  var md=m.join("\n");
+
+  setOut(txt, md);
+}
+
+/* ---- 週次振り返り（自分用・直近7日） ---- */
+function buildWeeklyReview(){
+  currentTab="timetable";
+  var all=loadDays().slice();
+  if(!all.length){ toast("保存データがありません"); return; }
+  // 日付キーでソートし、最新日から7日ウィンドウを対象に
+  all.sort(function(a,b){ var ka=dateKey(a.date), kb=dateKey(b.date); return (ka||0)-(kb||0); });
+  var latest=all[all.length-1];
+  var lk=dateKey(latest.date);
+  var days;
+  if(lk!=null){
+    var fromK=lk-6; // 同月内のざっくり7日ウィンドウ
+    days=all.filter(function(d){ var k=dateKey(d.date); return k==null?false:(k<=lk && k>=fromK); });
+    if(days.length<1) days=all.slice(-7);
+  } else {
+    days=all.slice(-7);
+  }
+
+  // 集計
+  var km={lesson:0,meeting:0,work:0}, brk=0, custom={}, tagMin={}, rateSum=0;
+  var goodList=[], learnList=[], notWellList=[], tryList=[];
+  days.forEach(function(d){
+    km.lesson+=(d.kindMin&&d.kindMin.lesson)||0;
+    km.meeting+=(d.kindMin&&d.kindMin.meeting)||0;
+    km.work+=(d.kindMin&&d.kindMin.work)||0;
+    brk+=d.breakMin||0;
+    if(d.customMin){ Object.keys(d.customMin).forEach(function(k){ custom[k]=(custom[k]||0)+d.customMin[k]; }); }
+    var tm=tagMinutesFromPeriods(d.periods);
+    Object.keys(tm).forEach(function(k){ tagMin[k]=(tagMin[k]||0)+tm[k]; });
+    rateSum+=d.rate||0;
+    // できたこと=Keep、気づき=goal達成や◎、うまくいかない=Problem/△、来週=Try
+    if(d.keep) goodList.push(d.keep+"（"+d.date+"）");
+    if(d.goal && d.rate>=75) goodList.push("【めあて達成】"+d.goal+"（"+d.date+"）");
+    if(d.tryv) tryList.push(d.tryv+"（"+d.date+"）");
+    if(d.problem) notWellList.push(d.problem+"（"+d.date+"）");
+    (d.periods||[]).forEach(function(p){
+      if(p.kind==="break"||p.isBreak) return;
+      var what=(p.actual||p.plan||"").trim();
+      if(!what) return;
+      if(p.status==="◎") learnList.push(what);
+      else if(p.status==="△") notWellList.push(what+"（未達）");
+    });
+  });
+  function uniq(a){ var s={},o=[]; a.forEach(function(x){ if(!s[x]){s[x]=1;o.push(x);} }); return o; }
+  goodList=uniq(goodList); learnList=uniq(learnList); notWellList=uniq(notWellList); tryList=uniq(tryList);
+  var avgRate=Math.round(rateSum/days.length);
+  var workTotal=km.lesson+km.meeting+km.work+Object.keys(custom).reduce(function(a,k){return a+custom[k];},0);
+  var period=days[0].date+" 〜 "+days[days.length-1].date;
+
+  /* テキスト版 */
+  var o=[];
+  o.push(BAR); o.push("🗓 週次振り返り（自分用）"); o.push(BAR);
+  o.push("対象："+period+"（"+days.length+"日分）／ 平均達成率 "+avgRate+"%");
+  o.push("");
+  o.push(BAR2); o.push("⏱ 今週の時間の使い方（"+unitLabel()+"）"); o.push(BAR2);
+  o.push("授業 "+fmtHM(km.lesson)+" ／ 会議 "+fmtHM(km.meeting)+" ／ 作業 "+fmtHM(km.work)+(Object.keys(custom).length?(" ／ "+Object.keys(custom).map(function(k){return k+" "+fmtHM(custom[k]);}).join(" ／ ")):""));
+  o.push("稼働合計 "+fmtHM(workTotal)+"（休憩 "+fmtHM(brk)+"）");
+  var tagKeys=Object.keys(tagMin).sort(function(a,b){return tagMin[b]-tagMin[a];});
+  if(tagKeys.length){ o.push("タグ別："+tagKeys.slice(0,8).map(function(k){return "#"+k+" "+fmtHM(tagMin[k]);}).join(" ／ ")); }
+  o.push("");
+  o.push(BAR2); o.push("😊 できたこと・続けたいこと（Keep）"); o.push(BAR2);
+  (goodList.length?goodList:["（記録なし）"]).forEach(function(x){ o.push("・"+x); });
+  o.push("");
+  o.push(BAR2); o.push("💡 気づき・学び"); o.push(BAR2);
+  (learnList.length?learnList.slice(0,12):["（達成度◎の作業なし）"]).forEach(function(x){ o.push("・"+x); });
+  o.push("");
+  o.push(BAR2); o.push("🌧 うまくいかなかったこと（Problem）"); o.push(BAR2);
+  (notWellList.length?notWellList:["（特になし）"]).forEach(function(x){ o.push("・"+x); });
+  o.push("");
+  o.push(BAR2); o.push("🌱 来週やってみること（Try）"); o.push(BAR2);
+  (tryList.length?tryList:["（来週のTryを書こう）"]).forEach(function(x){ o.push("・"+x); });
+  var txt=o.join("\n");
+
+  /* Markdown版 */
+  var m=[];
+  m.push("# 🗓 週次振り返り（自分用）");
+  m.push("");
+  m.push("- 対象："+period+"（"+days.length+"日分）");
+  m.push("- 平均達成率："+avgRate+"%");
+  m.push("");
+  m.push("## ⏱ 今週の時間の使い方（"+unitLabel()+"）");
+  m.push("");
+  m.push("| 区分 | 時間 |");
+  m.push("|---|---|");
+  m.push("| 授業 | "+fmtHM(km.lesson)+" |");
+  m.push("| 会議 | "+fmtHM(km.meeting)+" |");
+  m.push("| 作業 | "+fmtHM(km.work)+" |");
+  Object.keys(custom).forEach(function(k){ m.push("| "+k+" | "+fmtHM(custom[k])+" |"); });
+  m.push("| 稼働合計 | "+fmtHM(workTotal)+" |");
+  if(tagKeys.length){
+    m.push("");
+    m.push("**タグ別**："+tagKeys.slice(0,8).map(function(k){return "#"+k+" "+fmtHM(tagMin[k]);}).join(" / "));
+  }
+  m.push("");
+  m.push("## 😊 できたこと・続けたいこと（Keep）");
+  m.push("");
+  (goodList.length?goodList:["（記録なし）"]).forEach(function(x){ m.push("- "+x); });
+  m.push("");
+  m.push("## 💡 気づき・学び");
+  m.push("");
+  (learnList.length?learnList.slice(0,12):["（達成度◎の作業なし）"]).forEach(function(x){ m.push("- "+x); });
+  m.push("");
+  m.push("## 🌧 うまくいかなかったこと（Problem）");
+  m.push("");
+  (notWellList.length?notWellList:["（特になし）"]).forEach(function(x){ m.push("- "+x); });
+  m.push("");
+  m.push("## 🌱 来週やってみること（Try）");
+  m.push("");
+  (tryList.length?tryList:["（来週のTryを書こう）"]).forEach(function(x){ m.push("- "+x); });
+  var md=m.join("\n");
+
+  setOut(txt, md);
+}
+
+/* ---- 個人用カイゼンMTG（KPTC＋趣味枠・直近7日） ---- */
+function buildKaizenMTG(){
+  currentTab="timetable";
+  var all=loadDays().slice();
+  all.sort(function(a,b){ var ka=dateKey(a.date), kb=dateKey(b.date); return (ka||0)-(kb||0); });
+  // 直近7日ウィンドウ（週次と同じロジック）
+  var days=[];
+  if(all.length){
+    var lk=dateKey(all[all.length-1].date);
+    if(lk!=null){ days=all.filter(function(d){ var k=dateKey(d.date); return k!=null && k<=lk && k>=lk-6; }); }
+    if(!days.length) days=all.slice(-7);
+  }
+
+  var keepList=[], tryList=[], problemList=[], goodWork=[];
+  var rateSum=0;
+  days.forEach(function(d){
+    rateSum+=d.rate||0;
+    if(d.keep) keepList.push(d.keep+"（"+d.date+"）");
+    if(d.goal && d.rate>=75) keepList.push("【めあて達成】"+d.goal+"（"+d.date+"）");
+    if(d.tryv) tryList.push(d.tryv+"（"+d.date+"）");
+    if(d.problem) problemList.push(d.problem+"（"+d.date+"）");
+    (d.periods||[]).forEach(function(p){
+      if(p.kind==="break"||p.isBreak) return;
+      var what=(p.actual||p.plan||"").trim(); if(!what) return;
+      if(p.status==="◎") goodWork.push(what);
+      else if(p.status==="△") problemList.push(what+"（未達）");
+    });
+  });
+  function uniq(a){ var s={},o=[]; a.forEach(function(x){ if(!s[x]){s[x]=1;o.push(x);} }); return o; }
+  keepList=uniq(keepList); tryList=uniq(tryList); problemList=uniq(problemList); goodWork=uniq(goodWork);
+  var hobby=lines(v("kz_hobby"));
+  var change=lines(v("kz_change"));
+  var avgRate=days.length?Math.round(rateSum/days.length):0;
+  var period=days.length?(days[0].date+" 〜 "+days[days.length-1].date):"（保存ログなし）";
+
+  /* テキスト版 */
+  var o=[];
+  o.push(BAR); o.push("🛠 個人用カイゼンMTG（KPTC）"); o.push(BAR);
+  o.push("対象："+period+(days.length?("（"+days.length+"日分）／ 平均達成率 "+avgRate+"%"):""));
+  o.push("");
+  o.push(BAR2); o.push("✅ Keep（続けること・うまくいったこと）"); o.push(BAR2);
+  var keeps=keepList.concat(goodWork.slice(0,8).map(function(x){return x;}));
+  (keeps.length?uniq(keeps):["（記録なし）"]).forEach(function(x){ o.push("・"+x); });
+  o.push("");
+  o.push(BAR2); o.push("🌱 Try（次に試すこと）"); o.push(BAR2);
+  (tryList.length?tryList:["（試したいことを書こう）"]).forEach(function(x){ o.push("・"+x); });
+  o.push("");
+  o.push(BAR2); o.push("🔄 Change（やめる・変えること）"); o.push(BAR2);
+  var changes=change.concat(problemList.map(function(x){return "課題から→ "+x;}));
+  (changes.length?changes:["（やめる/変えることを書こう）"]).forEach(function(x){ o.push("・"+x); });
+  o.push("");
+  o.push(BAR2); o.push("🎨 趣味枠（個人開発・記事・インプット）"); o.push(BAR2);
+  (hobby.length?hobby:["（今週の趣味・学びを書こう）"]).forEach(function(x){ o.push("・"+x); });
+  o.push("");
+  o.push("🐰 うさうさ先生：完璧じゃなくていい。Keepを1つ残せたら、それが前進です。");
+  var txt=o.join("\n");
+
+  /* Markdown版 */
+  var m=[];
+  m.push("# 🛠 個人用カイゼンMTG（KPTC）");
+  m.push("");
+  m.push("- 対象："+period+(days.length?("（"+days.length+"日分・平均達成率 "+avgRate+"%）"):""));
+  m.push("");
+  m.push("## ✅ Keep（続けること）");
+  m.push("");
+  (keeps.length?uniq(keeps):["（記録なし）"]).forEach(function(x){ m.push("- "+x); });
+  m.push("");
+  m.push("## 🌱 Try（次に試すこと）");
+  m.push("");
+  (tryList.length?tryList:["（試したいことを書こう）"]).forEach(function(x){ m.push("- "+x); });
+  m.push("");
+  m.push("## 🔄 Change（やめる・変えること）");
+  m.push("");
+  (changes.length?changes:["（やめる/変えることを書こう）"]).forEach(function(x){ m.push("- "+x); });
+  m.push("");
+  m.push("## 🎨 趣味枠（個人開発・記事・インプット）");
+  m.push("");
+  (hobby.length?hobby:["（今週の趣味・学びを書こう）"]).forEach(function(x){ m.push("- "+x); });
+  m.push("");
+  m.push("> 🐰 完璧じゃなくていい。Keepを1つ残せたら、それが前進です。");
+  var md=m.join("\n");
+
+  setOut(txt, md);
+}
+
+function renderDayList(){
+  var info=aggregateDays();
+  var list=document.getElementById("dayList");
+  var ap=document.getElementById("aggPanel");
+  if(!info.count){
+    list.innerHTML='<div class="empty">まだ保存された日がありません。</div>';
+    ap.style.display="none";
+    return;
+  }
+  ap.style.display="block";
+  document.getElementById("a_lesson").textContent=fmtHM(info.agg.lesson);
+  document.getElementById("a_meeting").textContent=fmtHM(info.agg.meeting);
+  document.getElementById("a_work").textContent=fmtHM(info.agg.work);
+  document.getElementById("a_break").textContent=fmtHM(info.agg.brk);
+  document.getElementById("a_meta").textContent="保存日数 "+info.count+"日 ／ 平均達成率 "+info.avgRate+"%";
+
+  var html="";
+  info.days.slice(-30).reverse().forEach(function(d){
+    var safe=encodeURIComponent(d.date);
+    html+='<div class="day-item">'+
+      '<div><strong>'+_xmlEsc(d.date)+'</strong> <span class="meta">達成率 '+d.rate+'% ／ 授業'+fmtHM((d.kindMin&&d.kindMin.lesson)||0)+'・会議'+fmtHM((d.kindMin&&d.kindMin.meeting)||0)+'・作業'+fmtHM((d.kindMin&&d.kindMin.work)||0)+'</span></div>'+
+      '<button class="mini-btn" onclick="loadDayToForm(decodeURIComponent(\''+safe+'\'))">読込</button>'+
+      '<button class="mini-btn del" onclick="deleteDay(decodeURIComponent(\''+safe+'\'))">削除</button>'+
+    '</div>';
+  });
+  list.innerHTML=html;
+}
+
+/* ---- 最小XLSXライタ（依存ゼロ・ZIP STORE） ---- */
+function _crc32(bytes){
+  var table=_crc32.t || (_crc32.t=(function(){var t=[],c;for(var n=0;n<256;n++){c=n;for(var k=0;k<8;k++){c=(c&1)?(0xEDB88320^(c>>>1)):(c>>>1);}t[n]=c>>>0;}return t;})());
+  var crc=0xFFFFFFFF;
+  for(var i=0;i<bytes.length;i++){ crc=(crc>>>8)^table[(crc^bytes[i])&0xFF]; }
+  return (crc^0xFFFFFFFF)>>>0;
+}
+function _sb(s){ return new TextEncoder().encode(s); }
+function _u16(n){ return [n&0xFF,(n>>>8)&0xFF]; }
+function _u32(n){ return [n&0xFF,(n>>>8)&0xFF,(n>>>16)&0xFF,(n>>>24)&0xFF]; }
+function _zipStore(files){
+  var locals=[], central=[], offset=0;
+  files.forEach(function(f){
+    var nameB=_sb(f.name), crc=_crc32(f.data), size=f.data.length;
+    var lh=[].concat(_u32(0x04034b50),_u16(20),_u16(0),_u16(0),_u16(0),_u16(0),_u32(crc),_u32(size),_u32(size),_u16(nameB.length),_u16(0));
+    var local=new Uint8Array(lh.length+nameB.length+size);
+    local.set(lh,0); local.set(nameB,lh.length); local.set(f.data,lh.length+nameB.length);
+    locals.push(local);
+    var ch=[].concat(_u32(0x02014b50),_u16(20),_u16(20),_u16(0),_u16(0),_u16(0),_u16(0),_u32(crc),_u32(size),_u32(size),_u16(nameB.length),_u16(0),_u16(0),_u16(0),_u16(0),_u32(0),_u32(offset));
+    var cent=new Uint8Array(ch.length+nameB.length); cent.set(ch,0); cent.set(nameB,ch.length);
+    central.push(cent); offset+=local.length;
+  });
+  var cdSize=central.reduce(function(a,b){return a+b.length;},0);
+  var eocd=new Uint8Array([].concat(_u32(0x06054b50),_u16(0),_u16(0),_u16(files.length),_u16(files.length),_u32(cdSize),_u32(offset),_u16(0)));
+  var total=locals.reduce(function(a,b){return a+b.length;},0)+cdSize+eocd.length;
+  var out=new Uint8Array(total), p=0;
+  locals.forEach(function(l){ out.set(l,p); p+=l.length; });
+  central.forEach(function(c){ out.set(c,p); p+=c.length; });
+  out.set(eocd,p); return out;
+}
+function _xmlEsc(s){ return String(s).replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;").replace(/"/g,"&quot;"); }
+function _col(i){ var s=""; i++; while(i>0){ var m=(i-1)%26; s=String.fromCharCode(65+m)+s; i=Math.floor((i-1)/26);} return s; }
+function _sheetXml(rows){
+  var sd="";
+  rows.forEach(function(row,ri){
+    var cells="";
+    row.forEach(function(cell,ci){
+      if(cell==null||cell.v===""||cell.v==null) return;
+      var ref=_col(ci)+(ri+1);
+      if(cell.t==="n"){ cells+='<c r="'+ref+'"><v>'+cell.v+'</v></c>'; }
+      else { cells+='<c r="'+ref+'" t="inlineStr"><is><t xml:space="preserve">'+_xmlEsc(cell.v)+'</t></is></c>'; }
+    });
+    sd+='<row r="'+(ri+1)+'">'+cells+'</row>';
+  });
+  return '<?xml version="1.0" encoding="UTF-8" standalone="yes"?><worksheet xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main"><sheetData>'+sd+'</sheetData></worksheet>';
+}
+function _buildXlsx(sheets){
+  var files=[];
+  var ct='<?xml version="1.0" encoding="UTF-8" standalone="yes"?><Types xmlns="http://schemas.openxmlformats.org/package/2006/content-types">'+
+    '<Default Extension="rels" ContentType="application/vnd.openxmlformats-package.relationships+xml"/>'+
+    '<Default Extension="xml" ContentType="application/xml"/>'+
+    '<Override PartName="/xl/workbook.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet.main+xml"/>';
+  sheets.forEach(function(s,i){ ct+='<Override PartName="/xl/worksheets/sheet'+(i+1)+'.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.worksheet+xml"/>'; });
+  ct+='</Types>';
+  files.push({name:"[Content_Types].xml", data:_sb(ct)});
+  files.push({name:"_rels/.rels", data:_sb('<?xml version="1.0" encoding="UTF-8" standalone="yes"?><Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships"><Relationship Id="rId1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/officeDocument" Target="xl/workbook.xml"/></Relationships>')});
+  var wbSheets="", wbRels="";
+  sheets.forEach(function(s,i){
+    wbSheets+='<sheet name="'+_xmlEsc(s.name)+'" sheetId="'+(i+1)+'" r:id="rId'+(i+1)+'"/>';
+    wbRels+='<Relationship Id="rId'+(i+1)+'" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/worksheet" Target="worksheets/sheet'+(i+1)+'.xml"/>';
+  });
+  files.push({name:"xl/workbook.xml", data:_sb('<?xml version="1.0" encoding="UTF-8" standalone="yes"?><workbook xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main" xmlns:r="http://schemas.openxmlformats.org/officeDocument/2006/relationships"><sheets>'+wbSheets+'</sheets></workbook>')});
+  files.push({name:"xl/_rels/workbook.xml.rels", data:_sb('<?xml version="1.0" encoding="UTF-8" standalone="yes"?><Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships">'+wbRels+'</Relationships>')});
+  sheets.forEach(function(s,i){ files.push({name:"xl/worksheets/sheet"+(i+1)+".xml", data:_sb(_sheetXml(s.rows))}); });
+  return _zipStore(files);
+}
+function _S(v){return {v:(v==null?"":v),t:"s"};}
+function _N(v){return {v:(v==null||v===""?"":v),t:"n"};}
+
+/* ===== 月末報告書 Excel（タスク工数・丸め単位はROUND_UNITに統一） ===== */
+// 選択中の単位でのコマ換算（切り上げ：1単位未満でも1コマ計上）
+function unitMin(){ return ROUND_UNIT||15; }              // 1コマの分数（5/10/15/30/60）
+function toUnits(min){ var u=unitMin(); return Math.ceil((min||0)/u); } // コマ数
+function unitColLabel(){ return unitLabel().replace("単位","")+"コマ"; } // 列名「15分コマ」「1時間コマ」など
+// 後方互換：旧名 toQuarter は現在の単位で換算
+function toQuarter(min){ return toUnits(min); }
+
+// 保存ログ版：タスク（＝コマの実績/予定テキスト）×日付で工数レコードを作る
+function exportMonthlyXlsx(){
+  var from=v("rep_from"), to=v("rep_to");
+  var days = (from||to) ? daysInRange(from,to) : loadDays();
+  if(!days.length){ toast("対象期間に保存データがありません"); return; }
+  days=days.slice().sort(function(a,b){return (dateKey(a.date)||0)-(dateKey(b.date)||0);});
+
+  // タスクレコード：1コマ=1行（日付・タスク名・区分・分・コマ）
+  var COL=unitColLabel();
+  var rec=[[_S("日付"),_S("タスク"),_S("区分"),_S("分"),_S(COL),_S("達成")]];
+  var taskAgg={}; // タスク名 -> 合計分
+  var dayAgg={};  // 日付 -> 合計分
+  days.forEach(function(d){
+    (d.periods||[]).forEach(function(p){
+      if(p.kind==="break"||p.isBreak) return;
+      var rawName=(p.actual||p.plan||"").trim(); if(!rawName) return;
+      var name=rawName.replace(/[#＃]\S+/g,"").replace(/\s+/g," ").trim() || rawName; // タグ除去（空になれば元のまま）
+      var mins=p.dur||0;
+      rec.push([_S(d.date),_S(name),_S(p.kindLabel||""),_N(mins),_N(toUnits(mins)),_S(p.status||"")]);
+      taskAgg[name]=(taskAgg[name]||0)+mins;
+      dayAgg[d.date]=(dayAgg[d.date]||0)+mins;
+    });
+  });
+  if(rec.length<=1){ toast("タスク（実績/予定）が入ったコマがありません"); return; }
+
+  // タスク別 月次集計（選択中の丸め単位）
+  var taskKeys=Object.keys(taskAgg).sort(function(a,b){return taskAgg[b]-taskAgg[a];});
+  var totalMin=taskKeys.reduce(function(s,k){return s+taskAgg[k];},0);
+  var s_task=[[_S("タスク"),_S("合計分"),_S("時間"),_S(COL),_S("割合%")]];
+  taskKeys.forEach(function(k){
+    s_task.push([_S(k),_N(taskAgg[k]),_S(fmtHM(taskAgg[k])),_N(toUnits(taskAgg[k])),_N(totalMin?Math.round(taskAgg[k]/totalMin*100):0)]);
+  });
+  s_task.push([_S("合計"),_N(totalMin),_S(fmtHM(totalMin)),_N(toUnits(totalMin)),_N(100)]);
+
+  // 日別工数
+  var s_day=[[_S("日付"),_S("合計分"),_S("時間"),_S(COL)]];
+  Object.keys(dayAgg).sort(function(a,b){return (dateKey(a)||0)-(dateKey(b)||0);}).forEach(function(dt){
+    s_day.push([_S(dt),_N(dayAgg[dt]),_S(fmtHM(dayAgg[dt])),_N(toUnits(dayAgg[dt]))]);
+  });
+
+  // タグ別
+  var tagAll={};
+  days.forEach(function(d){ var tm=tagMinutesFromPeriods(d.periods); Object.keys(tm).forEach(function(k){ tagAll[k]=(tagAll[k]||0)+tm[k]; }); });
+  var tagKeys=Object.keys(tagAll).sort(function(a,b){return tagAll[b]-tagAll[a];});
+  var s_tag=[[_S("タグ"),_S("合計分"),_S("時間"),_S(COL)]];
+  if(tagKeys.length){ tagKeys.forEach(function(k){ s_tag.push([_S("#"+k),_N(tagAll[k]),_S(fmtHM(tagAll[k])),_N(toUnits(tagAll[k]))]); }); }
+  else { s_tag.push([_S("（タグなし）"),_S(""),_S(""),_S("")]); }
+
+  var buf=_buildXlsx([
+    {name:"タスク工数レコード",rows:rec},
+    {name:"タスク別月次集計",rows:s_task},
+    {name:"日別工数",rows:s_day},
+    {name:"タグ別集計",rows:s_tag}
+  ]);
+  _saveBlob(new Blob([buf],{type:"application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"}), "月末報告書_"+today()+".xlsx");
+  toast("月末報告書をExcelで出力しました（"+(rec.length-1)+"レコード・"+unitLabel()+"）");
+}
+
+// メモ版：貼り付けメモからタスク工数Excelを作る
+function exportMonthlyXlsxFromMemo(){
+  var text=v("rep_memo");
+  if(!text){ toast("メモを貼り付けてください"); return; }
+  // 日付つきで1行ずつレコード化（analyzeMemoは合算なので、ここは行単位で再走査）
+  var COL=unitColLabel();
+  var rec=[[_S("日付"),_S("タスク"),_S("分"),_S(COL),_S("タグ")]];
+  var taskAgg={}, tagAll={}, dayAgg={}, curDate="";
+  (text||"").split(/\r?\n/).forEach(function(raw){
+    var line=raw.trim(); if(!line) return;
+    var dm=/(\d{4})\D+(\d{1,2})\D+(\d{1,2})/.exec(line);
+    if(dm && line.replace(/[\d\/\-\.年月日（）\(\)月火水木金土曜\s]/g,"").length<=2){ curDate=line; return; }
+    var cells = line.indexOf(",")>=0 ? line.split(",") : [line];
+    cells.forEach(function(c){
+      c=c.trim(); if(!c) return;
+      var mins=parseMinutes(c), name=memoTaskName(c), tags=extractTags(c);
+      if(!isMeaningful(name)) return;
+      rec.push([_S(curDate),_S(name),_N(mins),_N(toUnits(mins)),_S(tags.map(function(t){return "#"+t;}).join(" "))]);
+      if(mins>0){
+        taskAgg[name]=(taskAgg[name]||0)+mins;
+        if(curDate) dayAgg[curDate]=(dayAgg[curDate]||0)+mins;
+        var uq={}; tags.forEach(function(t){uq[t]=1;});
+        Object.keys(uq).forEach(function(t){ tagAll[t]=(tagAll[t]||0)+mins; });
+      }
+    });
+  });
+  if(rec.length<=1){ toast("メモからタスクを抽出できませんでした"); return; }
+
+  var taskKeys=Object.keys(taskAgg).sort(function(a,b){return taskAgg[b]-taskAgg[a];});
+  var totalMin=taskKeys.reduce(function(s,k){return s+taskAgg[k];},0);
+  var s_task=[[_S("タスク"),_S("合計分"),_S("時間"),_S(COL),_S("割合%")]];
+  taskKeys.forEach(function(k){ s_task.push([_S(k),_N(taskAgg[k]),_S(fmtHM(taskAgg[k])),_N(toUnits(taskAgg[k])),_N(totalMin?Math.round(taskAgg[k]/totalMin*100):0)]); });
+  s_task.push([_S("合計"),_N(totalMin),_S(fmtHM(totalMin)),_N(toUnits(totalMin)),_N(totalMin?100:0)]);
+
+  var s_day=[[_S("日付"),_S("合計分"),_S("時間"),_S(COL)]];
+  Object.keys(dayAgg).sort(function(a,b){return (dateKey(a)||0)-(dateKey(b)||0);}).forEach(function(dt){ s_day.push([_S(dt),_N(dayAgg[dt]),_S(fmtHM(dayAgg[dt])),_N(toUnits(dayAgg[dt]))]); });
+
+  var tagKeys=Object.keys(tagAll).sort(function(a,b){return tagAll[b]-tagAll[a];});
+  var s_tag=[[_S("タグ"),_S("合計分"),_S("時間"),_S(COL)]];
+  if(tagKeys.length){ tagKeys.forEach(function(k){ s_tag.push([_S("#"+k),_N(tagAll[k]),_S(fmtHM(tagAll[k])),_N(toUnits(tagAll[k]))]); }); }
+  else { s_tag.push([_S("（タグなし）"),_S(""),_S(""),_S("")]); }
+
+  var buf=_buildXlsx([
+    {name:"タスク工数レコード",rows:rec},
+    {name:"タスク別月次集計",rows:s_task},
+    {name:"日別工数",rows:s_day},
+    {name:"タグ別集計",rows:s_tag}
+  ]);
+  _saveBlob(new Blob([buf],{type:"application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"}), "月末報告書_メモ_"+today()+".xlsx");
+  toast("メモから月末報告書Excelを出力しました（"+(rec.length-1)+"レコード・"+unitLabel()+"）");
+}
+
+function exportXlsx(){
+  var days=loadDays();
+  if(!days.length){
+    // 未保存なら現在の日を即席で対象に
+    var cur=currentDayRecord();
+    if(cur.slots>0){ days=[cur]; } else { toast("先に「この日を保存」してください"); return; }
+  }
+  // 日次サマリ
+  var s1=[[_S("日付"),_S("稼働コマ"),_S("予定分"),_S("実績分"),_S("達成率%"),_S("授業分"),_S("会議分"),_S("作業分"),_S("休憩分"),_S("めあて"),_S("先生から一言")]];
+  days.forEach(function(d){
+    s1.push([_S(d.date),_N(d.slots),_N(d.planMin),_N(d.actMin),_N(d.rate),
+      _N((d.kindMin&&d.kindMin.lesson)||0),_N((d.kindMin&&d.kindMin.meeting)||0),_N((d.kindMin&&d.kindMin.work)||0),_N(d.breakMin||0),
+      _S(d.goal),_S(d.teacher)]);
+  });
+  // 明細（CSVと同じ列＝再インポート可能）
+  var s2=[[_S("日付"),_S("時限"),_S("区分"),_S("開始"),_S("終了"),_S("予定分"),_S("予定"),_S("実績"),_S("達成")]];
+  days.forEach(function(d){
+    (d.periods||[]).forEach(function(p){
+      s2.push([_S(d.date),_S(p.label),_S(p.kindLabel||KIND_LABEL[p.kind]||""),_S(p.s),_S(p.e),_N(p.dur),_S(p.plan),_S(p.actual),_S(p.status)]);
+    });
+  });
+  // 区分集計
+  var info=aggregateDays();
+  var s3=[[_S("区分"),_S("合計予定分"),_S("時間")],
+    [_S("授業"),_N(info.agg.lesson),_S(fmtHM(info.agg.lesson))],
+    [_S("会議"),_N(info.agg.meeting),_S(fmtHM(info.agg.meeting))],
+    [_S("作業"),_N(info.agg.work),_S(fmtHM(info.agg.work))],
+    [_S("休憩"),_N(info.agg.brk),_S(fmtHM(info.agg.brk))],
+    [_S(""),_S(""),_S("")],
+    [_S("保存日数"),_N(info.count),_S("")],
+    [_S("平均達成率%"),_N(info.avgRate),_S("")]];
+  // タグ別集計（独立シート）：全日のコマからタグ時間を積み上げ
+  var tagAll={};
+  days.forEach(function(d){
+    var tm=tagMinutesFromPeriods(d.periods);
+    Object.keys(tm).forEach(function(k){ tagAll[k]=(tagAll[k]||0)+tm[k]; });
+  });
+  var tagKeys=Object.keys(tagAll).sort(function(a,b){return tagAll[b]-tagAll[a];});
+  var U=ROUND_UNIT||15;
+  var s4=[[_S("タグ"),_S("合計予定分"),_S("時間"),_S("コマ("+U+"分)")]];
+  if(tagKeys.length){
+    tagKeys.forEach(function(k){ s4.push([_S("#"+k),_N(tagAll[k]),_S(fmtHM(tagAll[k])),_N(Math.round(tagAll[k]/U))]); });
+  } else {
+    s4.push([_S("（タグの記載なし）"),_S(""),_S(""),_S("")]);
+  }
+  var buf=_buildXlsx([{name:"日次サマリ",rows:s1},{name:"明細",rows:s2},{name:"区分集計",rows:s3},{name:"タグ別集計",rows:s4}]);
+  var blob=new Blob([buf],{type:"application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"});
+  _saveBlob(blob, "時間割ログ_"+today()+".xlsx");
+  toast("Excelを書き出しました（"+days.length+"日分）");
+}
+
+/* ---- CSV 入出力（明細形式・再インポート用） ---- */
+function _csvCell(s){ s=String(s==null?"":s); return /[",\n]/.test(s) ? '"'+s.replace(/"/g,'""')+'"' : s; }
+function exportCsv(){
+  var days=loadDays();
+  if(!days.length){ var cur=currentDayRecord(); if(cur.slots>0){ days=[cur]; } else { toast("先に「この日を保存」してください"); return; } }
+  var rows=[["日付","時限","区分","開始","終了","予定分","予定","実績","達成"]];
+  days.forEach(function(d){
+    (d.periods||[]).forEach(function(p){
+      rows.push([d.date,p.label,p.kindLabel||KIND_LABEL[p.kind]||"",p.s,p.e,p.dur,p.plan,p.actual,p.status]);
+    });
+  });
+  var csv=rows.map(function(r){return r.map(_csvCell).join(",");}).join("\r\n");
+  var blob=new Blob(["\uFEFF"+csv],{type:"text/csv;charset=utf-8"});
+  _saveBlob(blob, "時間割ログ_"+today()+".csv");
+  toast("CSVを書き出しました");
+}
+function _parseCsv(text){
+  text=text.replace(/^\uFEFF/,"");
+  var rows=[], row=[], cur="", inq=false;
+  for(var i=0;i<text.length;i++){
+    var ch=text[i];
+    if(inq){
+      if(ch==='"'){ if(text[i+1]==='"'){ cur+='"'; i++; } else { inq=false; } }
+      else { cur+=ch; }
+    } else {
+      if(ch==='"'){ inq=true; }
+      else if(ch===','){ row.push(cur); cur=""; }
+      else if(ch==='\n'){ row.push(cur); rows.push(row); row=[]; cur=""; }
+      else if(ch==='\r'){ /* skip */ }
+      else { cur+=ch; }
+    }
+  }
+  if(cur.length||row.length){ row.push(cur); rows.push(row); }
+  return rows.filter(function(r){ return r.some(function(c){return c!=="";}); });
+}
+var KIND_FROM_LABEL={"授業":"lesson","会議":"meeting","作業":"work","休憩":"break"};
+function importCsv(input){
+  var file=input.files&&input.files[0];
+  if(!file){ return; }
+  var reader=new FileReader();
+  reader.onload=function(){
+    try{
+      var rows=_parseCsv(String(reader.result));
+      if(rows.length<2){ toast("データが見つかりません"); return; }
+      var header=rows[0].map(function(s){return s.trim();});
+      var ix={};
+      ["日付","時限","区分","開始","終了","予定分","予定","実績","達成"].forEach(function(h){ ix[h]=header.indexOf(h); });
+      if(ix["日付"]<0){ toast("ヘッダに「日付」がありません"); return; }
+      var byDate={};
+      rows.slice(1).forEach(function(r){
+        var date=(r[ix["日付"]]||"").trim(); if(!date) return;
+        if(!byDate[date]) byDate[date]={date:date, periods:[]};
+        var kindLabel=(ix["区分"]>=0?(r[ix["区分"]]||"").trim():"作業");
+        var kind=KIND_FROM_LABEL[kindLabel];
+        var customLabel="";
+        if(!kind){ kind="other"; customLabel=kindLabel||"その他"; } // 未知ラベルはその他
+        byDate[date].periods.push({
+          label:(ix["時限"]>=0?r[ix["時限"]]:"")||"",
+          kind:kind, kindLabel:kindLabel||"その他", customLabel:customLabel,
+          s:(ix["開始"]>=0?r[ix["開始"]]:"")||"", e:(ix["終了"]>=0?r[ix["終了"]]:"")||"",
+          plan:(ix["予定"]>=0?r[ix["予定"]]:"")||"", actual:(ix["実績"]>=0?r[ix["実績"]]:"")||"",
+          status:((ix["達成"]>=0?r[ix["達成"]]:"")||"◎")||"◎"
+        });
+      });
+      // 各日の集計を再計算してレコード化
+      var days=Object.keys(byDate).map(function(date){ return recomputeRecord(byDate[date]); });
+      days.sort(function(a,b){ return a.date<b.date?-1:(a.date>b.date?1:0); });
+      // 既存とマージ（同日付は上書き）
+      var existing=loadDays();
+      var map={}; existing.forEach(function(d){ map[d.date]=d; });
+      days.forEach(function(d){ map[d.date]=d; });
+      var merged=Object.keys(map).map(function(k){return map[k];}).sort(function(a,b){return a.date<b.date?-1:(a.date>b.date?1:0);});
+      storeDays(merged);
+      renderDayList();
+      // 最新日をフォームへ
+      if(merged.length){ loadDayToForm(merged[merged.length-1].date); }
+      toast(days.length+"日分を取り込みました");
+    }catch(e){ toast("読み込みに失敗しました"); }
+    input.value="";
+  };
+  reader.readAsText(file,"UTF-8");
+}
+// periods配列だけのオブジェクトから、集計込みのレコードを再構築
+function recomputeRecord(obj){
+  var kindMin={lesson:0,meeting:0,work:0}, customMin={}, breakMin=0, slots=0, planMin=0, actMin=0, cO=0,cMaru=0,cTri=0,cBrk=0;
+  (obj.periods||[]).forEach(function(p){
+    var dur=p.dur;
+    if(dur==null||dur===""){ var sm=toMin(p.s), em=toMin(p.e); dur=(sm!=null&&em!=null&&em>sm)?(em-sm):0; }
+    dur=round15(parseInt(dur,10)||0); p.dur=dur; // 15分丸め
+    if(p.kind==="break"){ cBrk++; breakMin+=dur; return; }
+    slots++; planMin+=dur;
+    if(p.kind==="other"){ var nm=p.customLabel||p.kindLabel||"その他"; customMin[nm]=(customMin[nm]||0)+dur; }
+    else if(kindMin[p.kind]!=null){ kindMin[p.kind]+=dur; }
+    if(p.status==="◎"){ cO++; actMin+=dur; }
+    else if(p.status==="○"){ cMaru++; actMin+=dur*0.5; }
+    else if(p.status==="△"){ cTri++; }
+  });
+  return {
+    date:obj.date, mood:obj.mood||"", place:obj.place||"", goal:obj.goal||"", word:obj.word||"",
+    keep:obj.keep||"", problem:obj.problem||"", tryv:obj.tryv||"", teacher:obj.teacher||"",
+    slots:slots, planMin:planMin, actMin:Math.round(actMin),
+    rate: planMin>0?Math.round(actMin/planMin*100):0,
+    cO:cO,cMaru:cMaru,cTri:cTri,cBrk:cBrk, kindMin:kindMin, customMin:customMin, breakMin:breakMin,
+    periods:obj.periods||[]
+  };
+}
+function _saveBlob(blob, name){
+  var a=document.createElement("a");
+  a.href=URL.createObjectURL(blob); a.download=name;
+  document.body.appendChild(a); a.click(); document.body.removeChild(a);
+  URL.revokeObjectURL(a.href);
+}
+
+/* ============ スキルシート（案件欄・30日スタック） ============ */
+var SK_KEY="usausa_skill_v1";
+function skLoad(){
+  if(!lsAvailable()) return (window.__memSkill||[]);
+  try{ return JSON.parse(window.localStorage.getItem(SK_KEY)||"[]"); }catch(e){ return []; }
+}
+function skStore(arr){
+  if(lsAvailable()){ try{ window.localStorage.setItem(SK_KEY, JSON.stringify(arr)); }catch(e){} }
+  window.__memSkill=arr;
+}
+function jlen(s){ return (s||"").trim().length; } // 文字数（前後空白除く）
+function lines(s){ return (s||"").split("\n").map(function(x){return x.trim();}).filter(Boolean); }
+
+function skAddWork(val){
+  var wrap=document.getElementById("sk_workList");
+  var row=document.createElement("div"); row.className="work-row";
+  var idx=document.createElement("span"); idx.className="idx";
+  var inp=document.createElement("input"); inp.className="sk-work"; inp.placeholder="例：基本設計、詳細設計及び設計書作成";
+  inp.value=val||""; inp.addEventListener("input", skCount);
+  var del=document.createElement("button"); del.type="button"; del.className="del"; del.textContent="×";
+  del.onclick=function(){ row.remove(); skRenumber(); skCount(); };
+  row.appendChild(idx); row.appendChild(inp); row.appendChild(del);
+  wrap.appendChild(row);
+  skRenumber();
+}
+function skRenumber(){
+  [].slice.call(document.querySelectorAll("#sk_workList .work-row .idx")).forEach(function(el,i){ el.textContent=(i+1)+"."; });
+}
+function skReadWork(){
+  return [].slice.call(document.querySelectorAll("#sk_workList .sk-work")).map(function(i){return i.value.trim();}).filter(Boolean);
+}
+
+/* ============ 30日分から下書きを作る ============ */
+var SK_DRAFT={ items:[], dates:[], goals:[], kindMin:{lesson:0,meeting:0,work:0}, custom:{} };
+
+// 作業項目の正規化：先頭の記号・チェックボックス・状態語を落とし、動詞語尾に寄せる
+function normWorkItem(s){
+  if(!s) return "";
+  s=s.replace(/^[\s　]*([\-・*※▼●□■◆◎○△➡→\u2022]|\[[ xX]?\]|\d+[\.\)）]|[#＃]\S+)\s*/,"");
+  s=s.replace(/[#＃]\S+/g,"").trim();       // 文中タグ除去
+  s=s.replace(/^(完了|対応中|未着手|未完了|done|完了：|実績：|予定：)\s*/i,"");
+  s=s.replace(/（[^）]*\d{1,2}:\d{2}[^）]*）/g,""); // 時刻括弧除去
+  s=s.replace(/[。\.]$/,"").trim();
+  return s;
+}
+function isMeaningful(s){
+  if(!s) return false;
+  if(s.length<3) return false;
+  if(/^(なし|特になし|休憩|昼休み|ー|-|—)$/.test(s)) return false;
+  return true;
+}
+
+// 30日ログ（時間割保存データ）から候補を集める
+function skCollectFromLog(){
+  var days=loadDays();
+  var items=[], dates=[], goals=[], kindMin={lesson:0,meeting:0,work:0}, custom={};
+  days.forEach(function(d){
+    if(d.date) dates.push(d.date);
+    if(d.goal) goals.push(d.goal);
+    if(d.kindMin){ kindMin.lesson+=d.kindMin.lesson||0; kindMin.meeting+=d.kindMin.meeting||0; kindMin.work+=d.kindMin.work||0; }
+    if(d.customMin){ Object.keys(d.customMin).forEach(function(k){ custom[k]=(custom[k]||0)+d.customMin[k]; }); }
+    (d.periods||[]).forEach(function(p){
+      if(p.kind==="break"||p.isBreak) return;
+      [p.actual,p.plan].forEach(function(txt){
+        var n=normWorkItem(txt);
+        if(isMeaningful(n)) items.push(n);
+      });
+    });
+  });
+  return {items:items, dates:dates, goals:goals, kindMin:kindMin, custom:custom};
+}
+
+// 自由テキスト/CSVから候補を集める（行ベース）
+function skCollectFromText(text){
+  var items=[], dates=[];
+  (text||"").split(/\r?\n/).forEach(function(raw){
+    var line=raw.trim(); if(!line) return;
+    // 日付行を拾う
+    var dm=/(\d{4})\D+(\d{1,2})\D+(\d{1,2})/.exec(line);
+    if(dm && line.replace(/[\d\/\-\.年月日（）\(\)月火水木金土曜\s]/g,"").length<=2){
+      dates.push(line); return;
+    }
+    // CSVっぽい場合はカンマ分割して各セルも候補に
+    var cells = line.indexOf(",")>=0 ? line.split(",") : [line];
+    cells.forEach(function(c){
+      var n=normWorkItem(c);
+      if(isMeaningful(n)) items.push(n);
+    });
+  });
+  return {items:items, dates:dates, goals:[], kindMin:{lesson:0,meeting:0,work:0}, custom:{}};
+}
+
+// 候補の集約：正規化して重複は回数カウント、頻度順
+function skAggregate(collected){
+  var map={}; // text -> count
+  collected.items.forEach(function(t){ map[t]=(map[t]||0)+1; });
+  var uniq=Object.keys(map).sort(function(a,b){ return map[b]-map[a] || a.localeCompare(b); });
+  SK_DRAFT={ items:uniq, counts:map, dates:collected.dates||[], goals:collected.goals||[],
+    kindMin:collected.kindMin||{lesson:0,meeting:0,work:0}, custom:collected.custom||{} };
+  skRenderCandidates();
+}
+
+function skRenderCandidates(){
+  var box=document.getElementById("sk_candidates");
+  var panel=document.getElementById("skDraftPanel");
+  if(!SK_DRAFT.items.length){
+    panel.style.display="block";
+    box.innerHTML='<span class="hint" style="margin:0;">候補が見つかりませんでした。メモの書式（・や[ ]で始まる行）をご確認ください。</span>';
+    document.getElementById("sk_draftMeta").textContent="";
+    return;
+  }
+  panel.style.display="block";
+  var nDays = SK_DRAFT.dates.length;
+  document.getElementById("sk_draftMeta").textContent =
+    "取り込み："+(nDays?nDays+"日分／":"") + SK_DRAFT.items.length + "種類の作業候補（よく出る順）";
+  var html="";
+  SK_DRAFT.items.forEach(function(t,i){
+    var cnt=SK_DRAFT.counts[t]||1;
+    var checked = (i<11) ? "checked" : ""; // 上位11件を既定ON（PDFの作業内容10〜12目安）
+    html+='<label><input type="checkbox" value="'+_xmlEsc(t)+'" '+checked+'> '+_xmlEsc(t)+(cnt>1?(' <span class="meta" style="color:var(--ink-soft);font-size:.74rem;">×'+cnt+'</span>'):'')+'</label>';
+  });
+  box.innerHTML=html;
+}
+function skCheckAllCand(on){
+  [].slice.call(document.querySelectorAll("#sk_candidates input")).forEach(function(c){ c.checked=!!on; });
+}
+function skApplyCandidates(){
+  var picked=[].slice.call(document.querySelectorAll("#sk_candidates input:checked")).map(function(c){return c.value;});
+  if(!picked.length){ toast("候補をチェックしてください"); return; }
+  document.getElementById("sk_workList").innerHTML="";
+  picked.forEach(function(t){ skAddWork(t); });
+  skCount();
+  toast(picked.length+"件を作業内容に入れました");
+  document.getElementById("sk_workList").scrollIntoView&&document.getElementById("sk_workList").scrollIntoView({behavior:"smooth",block:"center"});
+}
+
+// 期間・対応工程・担当業務・成果物のたたきを下書き
+function skFillDraftMeta(){
+  var dks=SK_DRAFT.dates.map(dateKey).filter(function(x){return x!=null;}).sort(function(a,b){return a-b;});
+  if(dks.length){
+    function fmt(k){ var y=Math.floor(k/10000), mo=Math.floor(k/100)%100, da=k%100; return y+"/"+("0"+mo).slice(-2)+"/"+("0"+da).slice(-2); }
+    var first=fmt(dks[0]), last=fmt(dks[dks.length-1]);
+    if(!v("sk_period")) document.getElementById("sk_period").value=first.replace(/\//g,"/")+"〜"+last;
+    if(!v("sk_proc")) document.getElementById("sk_proc").value="対応〜（"+first+"〜"+last+"）";
+  }
+  // 区分時間からヒント（多い区分を担当業務に）
+  var km=SK_DRAFT.kindMin||{};
+  if(!v("sk_duty")){
+    var hints=[];
+    if((km.work||0)>0) hints.push("各種開発・作業対応");
+    if((km.meeting||0)>0) hints.push("打合せ・調整");
+    if((km.lesson||0)>0) hints.push("研修・指導");
+    Object.keys(SK_DRAFT.custom||{}).forEach(function(k){ hints.push(k); });
+    if(hints.length) document.getElementById("sk_duty").value="担当としてPJに参画\n"+hints.join("、")+"を担当";
+  }
+  if(!v("sk_sys") && SK_DRAFT.goals.length){
+    document.getElementById("sk_sys").value=SK_DRAFT.goals[0]; // めあての先頭を仮置き
+  }
+  if(!v("sk_out")) document.getElementById("sk_out").value="（各種ドキュメント・成果物。可能なら数字を入れる）";
+  skCount();
+  toast("期間・対応工程などを下書きしました（要編集）");
+}
+
+// ボタン：時間割30日ログから
+function skFromLog(){
+  var c=skCollectFromLog();
+  if(!c.items.length && !c.dates.length){ toast("時間割の30日ログに保存データがありません"); return; }
+  skAggregate(c);
+  toast("30日ログから取り込みました");
+}
+// ボタン：貼り付けメモから
+function skParsePaste(){
+  var text=v("sk_memoPaste");
+  if(!text){ toast("メモを貼り付けてください"); return; }
+  skAggregate(skCollectFromText(text));
+}
+// ファイル：メモCSV/テキスト読み込み
+function skMemoImport(input){
+  var file=input.files&&input.files[0]; if(!file) return;
+  var reader=new FileReader();
+  reader.onload=function(){
+    var text=String(reader.result||"").replace(/^\uFEFF/,"");
+    if(!text){ toast("読み込めませんでした"); input.value=""; return; }
+    skAggregate(skCollectFromText(text));
+    toast("ファイルから取り込みました");
+    input.value="";
+  };
+  reader.readAsText(file,"UTF-8");
+}
+
+function _setCount(id, n, lo, hi, unit){
+  var el=document.getElementById(id); if(!el) return;
+  el.textContent=n+(unit||"字");
+  el.className="sk-count"+(n===0?"":(n>=lo&&n<=hi?" okc":" warn"));
+}
+function skCount(){
+  _setCount("sk_c_title", jlen(v("sk_title")),15,25);
+  _setCount("sk_c_sys",   jlen(v("sk_sys")),15,25);
+  var proc=lines(v("sk_proc")); document.getElementById("sk_c_proc").textContent=proc.join("").length+"字 / "+proc.length+"行";
+  document.getElementById("sk_c_proc").className="sk-count"+(proc.length>=2&&proc.length<=3?" okc":(proc.length?" warn":""));
+  var duty=lines(v("sk_duty")); document.getElementById("sk_c_duty").textContent=duty.join("").length+"字 / "+duty.length+"行";
+  document.getElementById("sk_c_duty").className="sk-count"+(duty.length>=2&&duty.length<=3?" okc":(duty.length?" warn":""));
+  var work=skReadWork(); var wl=work.length;
+  document.getElementById("sk_c_work").textContent=wl+"項目";
+  document.getElementById("sk_c_work").className="sk-count"+(wl===0?"":(wl>=10&&wl<=12?" okc":" warn"));
+  var out=lines(v("sk_out")); document.getElementById("sk_c_out").textContent=out.join("").length+"字 / "+out.length+"行";
+  document.getElementById("sk_c_out").className="sk-count"+(out.length>=1&&out.length<=2?" okc":(out.length?" warn":""));
+
+  // 本文セル合計＝システム内容+対応工程+担当業務+作業内容+成果物
+  var total = jlen(v("sk_sys")) + proc.join("").length + duty.join("").length + work.join("").length + out.join("").length;
+  document.getElementById("sk_total").textContent=total;
+  var c=document.getElementById("sk_case");
+  if(total===0){ c.textContent="—"; }
+  else if(total>=220){ c.textContent="A（長期・約300字）"; }
+  else if(total>=100){ c.textContent="B（中期・約100〜150字）"; }
+  else { c.textContent="C（短期・約100字）"; }
+}
+
+function skCurrentRecord(){
+  return {
+    no:v("sk_no"), industry:v("sk_industry"), role:v("sk_role"),
+    period:v("sk_period"), scale:v("sk_scale"),
+    lang:v("sk_lang"), db:v("sk_db"), os:v("sk_os"), mw:v("sk_mw"), phase:v("sk_phase"),
+    title:v("sk_title"), sys:v("sk_sys"), proc:v("sk_proc"), duty:v("sk_duty"),
+    work:skReadWork(), out:v("sk_out")
+  };
+}
+
+function buildSkill(){
+  currentTab="skill";
+  var r=skCurrentRecord();
+  /* テキスト版（提出用・ガイドなし） */
+  var o=[];
+  o.push(r.title || "（企業・プロジェクト名）");
+  o.push("");
+  o.push("■システム内容"); if(r.sys) o.push(r.sys);
+  o.push("");
+  o.push("■対応工程"); lines(r.proc).forEach(function(l){o.push(l);});
+  o.push("");
+  o.push("■担当業務"); lines(r.duty).forEach(function(l){o.push(l);});
+  o.push("");
+  o.push("■作業内容"); r.work.forEach(function(w){o.push("・"+w);});
+  o.push("");
+  o.push("■成果物"); lines(r.out).forEach(function(l){o.push(l);});
+  var txt=o.join("\n");
+
+  /* Markdown版 */
+  var m=[];
+  m.push("### "+(r.title||"（企業・プロジェクト名）"));
+  m.push("");
+  var meta=[];
+  if(r.no) meta.push("No "+r.no); if(r.industry) meta.push("業種 "+r.industry);
+  if(r.role) meta.push("役割 "+r.role); if(r.period) meta.push("期間 "+r.period);
+  if(r.scale) meta.push("規模 "+r.scale);
+  if(meta.length){ m.push("> "+meta.join(" ／ ")); m.push(""); }
+  if(r.lang||r.db||r.os||r.mw){
+    m.push("- 言語／ツール："+r.lang);
+    m.push("- DB："+r.db+" ／ サーバ・OS："+r.os+" ／ 環境："+r.mw);
+    m.push("");
+  }
+  m.push("**■システム内容**  "); m.push(r.sys||"");
+  m.push("");
+  m.push("**■対応工程**  "); lines(r.proc).forEach(function(l){m.push("- "+l);});
+  m.push("");
+  m.push("**■担当業務**  "); lines(r.duty).forEach(function(l){m.push("- "+l);});
+  m.push("");
+  m.push("**■作業内容**  "); r.work.forEach(function(w){m.push("- "+w);});
+  m.push("");
+  m.push("**■成果物**  "); lines(r.out).forEach(function(l){m.push("- "+l);});
+  var md=m.join("\n");
+
+  setOut(txt, md);
+}
+
+/* ---- 保存・一覧 ---- */
+function skSave(){
+  var r=skCurrentRecord();
+  if(!r.title && !r.sys && !r.work.length){ toast("案件名か内容を入れてください"); return; }
+  var key = r.no || r.title || ("案件"+(skLoad().length+1));
+  r._key=key;
+  var arr=skLoad();
+  var idx=arr.findIndex(function(x){return x._key===key;});
+  if(idx>=0){ arr[idx]=r; } else { arr.push(r); }
+  skStore(arr); skRenderList();
+  toast(idx>=0 ? "上書き保存しました" : "保存しました（"+arr.length+"件）");
+}
+function skDelete(key){
+  var arr=skLoad().filter(function(x){return x._key!==key;});
+  skStore(arr); skRenderList(); toast("削除しました");
+}
+function skClearAll(){
+  if(!skLoad().length){ toast("保存データはありません"); return; }
+  if(window.confirm && !window.confirm("保存した全案件を消去します。よろしいですか？")) return;
+  skStore([]); skRenderList(); toast("全消去しました");
+}
+function skLoadToForm(key){
+  var r=skLoad().find(function(x){return x._key===key;}); if(!r) return;
+  ["no","industry","role","period","scale","lang","db","os","mw","phase","title","sys","proc","duty","out"].forEach(function(f){
+    var el=document.getElementById("sk_"+f); if(el) el.value=r[f]||"";
+  });
+  document.getElementById("sk_workList").innerHTML="";
+  (r.work||[]).forEach(function(w){ skAddWork(w); });
+  if(!(r.work||[]).length){ skAddWork(); }
+  skCount();
+  toast((r.title||r._key)+" を読み込みました");
+}
+function skRenderList(){
+  var arr=skLoad();
+  var list=document.getElementById("skList");
+  var meta=document.getElementById("sk_logmeta");
+  if(!arr.length){ list.innerHTML='<div class="empty">まだ保存された案件がありません。</div>'; meta.style.display="none"; return; }
+  meta.style.display="block"; meta.textContent="保存件数 "+arr.length+"件";
+  var html="";
+  arr.slice(-30).reverse().forEach(function(r){
+    var key=encodeURIComponent(r._key);
+    var total=jlen(r.sys)+lines(r.proc).join("").length+lines(r.duty).join("").length+(r.work||[]).join("").length+lines(r.out).join("").length;
+    html+='<div class="day-item">'+
+      '<div><strong>'+_xmlEsc(r.title||r._key)+'</strong> <span class="meta">'+(r.industry?_xmlEsc(r.industry)+' ／ ':'')+(r.period?_xmlEsc(r.period)+' ／ ':'')+'本文'+total+'字・作業'+((r.work||[]).length)+'項目</span></div>'+
+      '<button class="mini-btn" onclick="skLoadToForm(decodeURIComponent(\''+key+'\'))">読込</button>'+
+      '<button class="mini-btn del" onclick="skDelete(decodeURIComponent(\''+key+'\'))">削除</button>'+
+    '</div>';
+  });
+  list.innerHTML=html;
+}
+
+/* ---- Excel / CSV 入出力 ---- */
+function skExportXlsx(){
+  var arr=skLoad();
+  if(!arr.length){ var c=skCurrentRecord(); if(c.title||c.sys||c.work.length){ c._key=c.no||c.title||"案件1"; arr=[c]; } else { toast("先に「この案件を保存」してください"); return; } }
+  // 一覧シート（1案件1行）
+  var s1=[[_S("No"),_S("業種"),_S("役割"),_S("期間"),_S("規模"),_S("言語／ツール"),_S("DB"),_S("サーバ／OS"),_S("環境/MW"),_S("担当工程"),_S("企業・PJ名"),_S("システム内容"),_S("作業項目数"),_S("本文文字数")]];
+  arr.forEach(function(r){
+    var total=jlen(r.sys)+lines(r.proc).join("").length+lines(r.duty).join("").length+(r.work||[]).join("").length+lines(r.out).join("").length;
+    s1.push([_S(r.no),_S(r.industry),_S(r.role),_S(r.period),_S(r.scale),_S(r.lang),_S(r.db),_S(r.os),_S(r.mw),_S(r.phase),_S(r.title),_S(r.sys),_N((r.work||[]).length),_N(total)]);
+  });
+  // 明細シート（5ブロックを縦持ち＝再インポート可能）
+  var s2=[[_S("No"),_S("企業・PJ名"),_S("ブロック"),_S("行番号"),_S("内容")]];
+  arr.forEach(function(r){
+    function push(block, items){ items.forEach(function(t,i){ s2.push([_S(r.no),_S(r.title),_S(block),_N(i+1),_S(t)]); }); }
+    push("システム内容", lines(r.sys));
+    push("対応工程", lines(r.proc));
+    push("担当業務", lines(r.duty));
+    push("作業内容", (r.work||[]));
+    push("成果物", lines(r.out));
+  });
+  var buf=_buildXlsx([{name:"案件一覧",rows:s1},{name:"案件明細",rows:s2}]);
+  _saveBlob(new Blob([buf],{type:"application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"}), "スキルシート_"+today()+".xlsx");
+  toast("Excelを書き出しました（"+arr.length+"件）");
+}
+
+// CSVは「メタ＋5ブロックを1行に畳む」形式（再インポートで完全復元）
+var SK_FIELDS=["No","業種","役割","期間","規模","言語ツール","DB","サーバOS","環境MW","担当工程","企業PJ名","システム内容","対応工程","担当業務","作業内容","成果物"];
+function skExportCsv(){
+  var arr=skLoad();
+  if(!arr.length){ var c=skCurrentRecord(); if(c.title||c.sys||c.work.length){ c._key=c.no||c.title||"案件1"; arr=[c]; } else { toast("先に「この案件を保存」してください"); return; } }
+  var rows=[SK_FIELDS.slice()];
+  arr.forEach(function(r){
+    rows.push([r.no,r.industry,r.role,r.period,r.scale,r.lang,r.db,r.os,r.mw,r.phase,
+      r.title,r.sys, lines(r.proc).join("\n"), lines(r.duty).join("\n"), (r.work||[]).join("\n"), lines(r.out).join("\n")]);
+  });
+  var csv=rows.map(function(r){return r.map(_csvCell).join(",");}).join("\r\n");
+  _saveBlob(new Blob(["\uFEFF"+csv],{type:"text/csv;charset=utf-8"}), "スキルシート_"+today()+".csv");
+  toast("CSVを書き出しました");
+}
+function skImportCsv(input){
+  var file=input.files&&input.files[0]; if(!file) return;
+  var reader=new FileReader();
+  reader.onload=function(){
+    try{
+      var rows=_parseCsv(String(reader.result));
+      if(rows.length<2){ toast("データが見つかりません"); return; }
+      var h=rows[0].map(function(s){return s.trim();});
+      var ix={}; SK_FIELDS.forEach(function(f){ ix[f]=h.indexOf(f); });
+      function g(r,f){ return ix[f]>=0 ? (r[ix[f]]||"") : ""; }
+      var imported=rows.slice(1).map(function(r){
+        var rec={
+          no:g(r,"No"),industry:g(r,"業種"),role:g(r,"役割"),period:g(r,"期間"),scale:g(r,"規模"),
+          lang:g(r,"言語ツール"),db:g(r,"DB"),os:g(r,"サーバOS"),mw:g(r,"環境MW"),phase:g(r,"担当工程"),
+          title:g(r,"企業PJ名"),sys:g(r,"システム内容"),proc:g(r,"対応工程"),duty:g(r,"担当業務"),
+          work:lines(g(r,"作業内容")), out:g(r,"成果物")
+        };
+        rec._key=rec.no||rec.title||("案件");
+        return rec;
+      }).filter(function(rec){ return rec.title||rec.sys||rec.work.length; });
+      // 既存とマージ（_keyで上書き）
+      var map={}; skLoad().forEach(function(x){ map[x._key]=x; });
+      imported.forEach(function(x){ map[x._key]=x; });
+      var merged=Object.keys(map).map(function(k){return map[k];});
+      skStore(merged); skRenderList();
+      if(merged.length){ skLoadToForm(merged[merged.length-1]._key); }
+      toast(imported.length+"件を取り込みました");
+    }catch(e){ toast("読み込みに失敗しました"); }
+    input.value="";
+  };
+  reader.readAsText(file,"UTF-8");
+}
+
+/* ---- output ---- */
+function setOut(text, md){
+  lastOut.txt = text;
+  lastOut.md  = (typeof md==="string" && md.length) ? md : text;
+  document.getElementById("output").value=text;
+  var ow=document.querySelector(".outwrap");
+  if(ow && ow.scrollIntoView){ ow.scrollIntoView({behavior:"smooth",block:"start"}); }
+}
+function toast(msg){
+  var t=document.getElementById("toast"); t.textContent=msg; t.classList.add("show");
+  setTimeout(function(){ t.classList.remove("show"); },1600);
+}
+function copyOut(){
+  var text=document.getElementById("output").value;
+  if(!text){ toast("先に生成してください"); return; }
+  if(navigator.clipboard && navigator.clipboard.writeText){
+    navigator.clipboard.writeText(text).then(function(){toast("コピーしました");},function(){fallbackCopy(text);});
+  } else { fallbackCopy(text); }
+}
+function fallbackCopy(text){
+  var ta=document.getElementById("output"); ta.select();
+  try{ document.execCommand("copy"); toast("コピーしました"); }catch(e){ toast("コピーできませんでした"); }
+}
+function downloadOut(fmt){
+  fmt = (fmt==="md") ? "md" : "txt";
+  var text = (fmt==="md") ? lastOut.md : lastOut.txt;
+  if(!text){ text=document.getElementById("output").value; } // 念のためのフォールバック
+  if(!text){ toast("先に生成してください"); return; }
+  var names={report:"日報",memo:"メモ日報",chat:"相談テンプレ",timetable:"時間割HR",skill:"スキルシート",pdca:"一人MTG_PDCA",mtg2:"一人MTG2_目標KPT",tpl:"ひな形日報"};
+  var mime=(fmt==="md") ? "text/markdown;charset=utf-8" : "text/plain;charset=utf-8";
+  var blob=new Blob(["\uFEFF"+text],{type:mime});
+  var a=document.createElement("a");
+  a.href=URL.createObjectURL(blob);
+  a.download=(names[currentTab]||"出力")+"_"+today()+"."+fmt;
+  document.body.appendChild(a); a.click(); document.body.removeChild(a);
+  URL.revokeObjectURL(a.href);
+  toast((fmt==="md"?"マークダウン":"テキスト")+"を保存しました");
+}
+
+/* ---- init ---- */
+(function init(){
+  addTask(); addTask();
+  var d=new Date(), w=["日","月","火","水","木","金","土"][d.getDay()];
+  var jp=d.getFullYear()+"年"+(d.getMonth()+1)+"月"+d.getDate()+"日("+w+")";
+  var slash=d.getFullYear()+"/"+("0"+(d.getMonth()+1)).slice(-2)+"/"+("0"+d.getDate()).slice(-2)+"（"+w+"）";
+  document.getElementById("r_date").value=jp;
+  document.getElementById("m_date").value=slash;
+  document.getElementById("tt_date").value=slash;
+  // 丸め設定の初期値を変数に合わせる
+  var ru=document.getElementById("round_unit"); if(ru) ru.value=String(ROUND_UNIT);
+  var rm=document.getElementById("round_mode"); if(rm) rm.value=ROUND_MODE;
+  TT_DEFAULT.forEach(function(p){ addPeriod(p); });
+  recalcTT();
+  renderQuickTags();
+  renderDayList();
+  // スキルシート：作業内容を10行seed、文字数カウンタ初期化、保存リスト描画
+  for(var si=0; si<10; si++){ skAddWork(); }
+  skCount();
+  skRenderList();
+  // 進捗報告：タスク2行seed
+  ciAddTask(); ciAddTask();
+  // 自由ひな形：初回は標準テンプレを登録、その後 一覧と差し込み欄を初期化
+  tplSeedDefault();
+  tplRenderSaved(); tplScan();
+})();
+</script>
+</body>
+</html>
